@@ -1,0 +1,13 @@
+{
+  "name": "collateral-crypto",
+  "version": "1.0.0",
+  "description": "Crypto collateral fiat currency loans platform",
+  "private": true,
+  "scripts": {
+    "install:all": "cd contracts && npm install && cd ../backend && npm install && cd ../frontend && npm install",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build:contracts": "cd contracts && npm run compile",
+    "test:contracts": "cd contracts && npm test"
+  }
+}
