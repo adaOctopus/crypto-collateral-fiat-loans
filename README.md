@@ -69,6 +69,13 @@ npm install
 
 See `.env.example` files in each directory for required environment variables.
 
+**Quick Setup:**
+- `contracts/.env.example` → Copy to `contracts/.env`
+- `backend/.env.example` → Copy to `backend/.env`
+- `frontend/.env.example` → Copy to `frontend/.env.local`
+
+**For detailed local testing instructions, see [LOCAL_TESTING_GUIDE.md](./LOCAL_TESTING_GUIDE.md)**
+
 3. **Deploy smart contracts:**
 
 ```bash
@@ -92,8 +99,10 @@ npm run dev
 
 ## Documentation
 
+- [Local Testing Guide](./LOCAL_TESTING_GUIDE.md) - **Complete guide to run and test locally**
 - [Smart Contract Design Decisions](./contracts/DESIGN.md) - Architecture and security considerations
 - [Frontend Integration Guide](./frontend/INTEGRATION.md) - Contract interaction implementation
+- [Setup Guide](./SETUP.md) - Quick setup reference
 
 ## Security Considerations
 
