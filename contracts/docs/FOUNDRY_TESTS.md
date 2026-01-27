@@ -56,7 +56,8 @@ foundryup
 2. **Install dependencies:**
 ```bash
 cd contracts
-forge install OpenZeppelin/openzeppelin-contracts --no-commit
+forge install foundry-rs/forge-std
+forge install OpenZeppelin/openzeppelin-contracts
 ```
 
 ### Run All Tests
@@ -210,7 +211,7 @@ forge build
 **Solution:** Install Foundry using `foundryup`
 
 ### Issue: "OpenZeppelin contracts not found"
-**Solution:** Run `forge install OpenZeppelin/openzeppelin-contracts --no-commit`
+**Solution:** Run `forge install OpenZeppelin/openzeppelin-contracts`
 
 ### Issue: Tests fail with "EvmError: Revert"
 **Solution:** Check test setup and ensure all contracts are deployed correctly in `setUp()`

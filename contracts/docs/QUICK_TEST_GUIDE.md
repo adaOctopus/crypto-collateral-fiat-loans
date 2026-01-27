@@ -2,15 +2,25 @@
 
 ## Installation
 
+**Quick Setup (Recommended):**
+```bash
+cd contracts
+./scripts/setup-foundry.sh
+```
+
+**Manual Setup:**
 ```bash
 # Install Foundry (if not already installed)
 curl -L https://foundry.paradigm.xyz | bash
 foundryup
 
-# Install OpenZeppelin contracts
+# Install dependencies
 cd contracts
-forge install OpenZeppelin/openzeppelin-contracts --no-commit
+forge install foundry-rs/forge-std
+forge install OpenZeppelin/openzeppelin-contracts
 ```
+
+**Note:** If you get "forge-std/Test.sol not found" error, run the setup script above.
 
 ## Running Tests
 
@@ -97,6 +107,6 @@ forge test --match-test "test_Revert*" -vv
 → Install Foundry: `foundryup`
 
 **"OpenZeppelin not found"**
-→ Run: `forge install OpenZeppelin/openzeppelin-contracts --no-commit`
+→ Run: `forge install OpenZeppelin/openzeppelin-contracts`
 
 For detailed documentation, see [FOUNDRY_TESTS.md](./FOUNDRY_TESTS.md)
