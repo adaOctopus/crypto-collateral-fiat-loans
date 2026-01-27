@@ -25,7 +25,7 @@ This application consists of three main components:
 - **Smart Contracts**: Solidity, Hardhat
 - **Frontend**: NextJS 15, TypeScript, TailwindCSS, ethers.js/viem
 - **Backend**: Node.js, Express, TypeScript, MongoDB, Mongoose, Zod
-- **Testing**: Hardhat, Chai
+- **Testing**: Hardhat, Chai, Foundry (Forge)
 
 ## Project Structure
 
@@ -100,6 +100,8 @@ npm run dev
 ## Documentation
 
 - [Local Testing Guide](./LOCAL_TESTING_GUIDE.md) - **Complete guide to run and test locally**
+- [Foundry Tests Guide](./contracts/FOUNDRY_TESTS.md) - **Smart contract unit tests with Foundry**
+- [Quick Test Guide](./contracts/QUICK_TEST_GUIDE.md) - Quick reference for running Foundry tests
 - [Smart Contract Design Decisions](./contracts/DESIGN.md) - Architecture and security considerations
 - [Frontend Integration Guide](./frontend/INTEGRATION.md) - Contract interaction implementation
 - [Setup Guide](./SETUP.md) - Quick setup reference
