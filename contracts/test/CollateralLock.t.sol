@@ -154,8 +154,12 @@ contract CollateralLockTest is Test {
             12000
         );
 
-        // Unlock portion
-        uint256 unlockAmount = 2e18;
+        // Unlock portion (1e18 is max to maintain 120% ratio)
+        // With 10e18 tokens at 2000e18 price = 20000e18 USD value
+        // Loan = 15000e18 USD
+        // To maintain 120%: need 18000e18 USD value = 9e18 tokens
+        // So max unlock = 1e18 tokens
+        uint256 unlockAmount = 1e18;
         uint256 userBalanceBefore = mockToken.balanceOf(user);
 
         vm.prank(user);
