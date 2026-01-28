@@ -26,6 +26,13 @@ async function main() {
   const collateralLockAddress = await collateralLock.getAddress();
   console.log("CollateralLock deployed to:", collateralLockAddress);
 
+  console.log("\nDeploying MockupEditor...");
+  const MockupEditor = await ethers.getContractFactory("MockupEditor");
+  const mockupEditor = await MockupEditor.deploy();
+  await mockupEditor.waitForDeployment();
+  const mockupEditorAddress = await mockupEditor.getAddress();
+  console.log("MockupEditor deployed to:", mockupEditorAddress);
+
   // Transfer ownership of VerificationNFT to CollateralLock
   console.log("\nTransferring VerificationNFT ownership to CollateralLock...");
   await verificationNFT.transferOwnership(collateralLockAddress);
