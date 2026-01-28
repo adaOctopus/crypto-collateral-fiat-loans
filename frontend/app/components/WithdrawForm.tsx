@@ -2,10 +2,10 @@
 
 // Form component for withdrawing portions of locked collateral
 import { useState } from 'react';
-import { useAccount } from 'wagmi';
+import { useAccount, useChainId } from 'wagmi';
 import { parseEther } from 'viem';
 import { Button } from './Button';
-import { getWalletClient, COLLATERAL_LOCK_ABI, CONTRACT_ADDRESSES } from '../lib/contracts';
+import { getWalletClient, getPublicClient, getChain, COLLATERAL_LOCK_ABI, CONTRACT_ADDRESSES } from '../lib/contracts';
 import axios from 'axios';
 import { Position } from '../lib/types';
 
@@ -24,6 +24,7 @@ export function WithdrawForm({
   const [unlockAmount, setUnlockAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const chainId = useChainId();
 
   const activePositions = positions.filter((p) => p.isActive);
 
@@ -52,6 +53,7 @@ export function WithdrawForm({
 
       // Execute unlock on chain
       const walletClient = getWalletClient();
+      const publicClient = getPublicClient(chainId);
       const [account] = await walletClient.getAddresses();
 
       const hash = await walletClient.writeContract({
@@ -60,9 +62,10 @@ export function WithdrawForm({
         functionName: 'unlockCollateral',
         args: [BigInt(selectedPosition), parseEther(unlockAmount)],
         account,
+        chain: getChain(chainId),
       });
 
-      await walletClient.waitForTransactionReceipt({ hash });
+      await publicClient.waitForTransactionReceipt({ hash });
 
       onSuccess();
       setUnlockAmount('');

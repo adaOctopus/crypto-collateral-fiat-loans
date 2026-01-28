@@ -8,10 +8,12 @@ The frontend interacts with smart contracts using **viem** (modern alternative t
 
 ### Contract Interaction Layer
 - **File**: `app/lib/contracts.ts`
-- **Purpose**: Contains contract ABIs, addresses, and utility functions for reading/writing to contracts
+- **Purpose**: Contract ABIs (from Hardhat artifacts), addresses, and utility functions for reading/writing to contracts
+- **ABIs**: `COLLATERAL_LOCK_ABI` and `VERIFICATION_NFT_ABI` are **imported from `contracts/artifacts/`** (Hardhat compile output). The frontend automatically uses the latest ABIs—no manual copy-paste. Run `npx hardhat compile` in `contracts/` after changing contracts, then restart or rebuild the frontend.
 - **Key Functions**:
-  - `getPublicClient()` - For read operations
+  - `getPublicClient(chainId)` - For read operations and `waitForTransactionReceipt`
   - `getWalletClient()` - For write operations (requires wallet connection)
+  - `getChain(chainId)` - Returns viem chain (Sepolia/Mainnet) for `writeContract`
 
 ### Contract Addresses
 Contract addresses are stored in environment variables:

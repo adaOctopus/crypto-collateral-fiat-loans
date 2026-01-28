@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useAccount, useChainId } from 'wagmi';
 import { parseEther, formatEther } from 'viem';
 import { Button } from './Button';
-import { getWalletClient, getPublicClient, COLLATERAL_LOCK_ABI, ERC20_ABI, CONTRACT_ADDRESSES } from '../lib/contracts';
+import { getWalletClient, getPublicClient, getChain, COLLATERAL_LOCK_ABI, ERC20_ABI, CONTRACT_ADDRESSES } from '../lib/contracts';
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
@@ -43,6 +43,7 @@ export function LockCollateralForm({
     try {
       // 1. Approve token spending
       const walletClient = getWalletClient();
+      const publicClient = getPublicClient(chainId);
       const [account] = await walletClient.getAddresses();
       
       const approveHash = await walletClient.writeContract({
@@ -51,9 +52,10 @@ export function LockCollateralForm({
         functionName: 'approve',
         args: [CONTRACT_ADDRESSES.COLLATERAL_LOCK as `0x${string}`, parseEther(amount)],
         account,
+        chain: getChain(chainId),
       });
 
-      await walletClient.waitForTransactionReceipt({ hash: approveHash });
+      await publicClient.waitForTransactionReceipt({ hash: approveHash });
 
       // 2. Lock collateral
       const minCollateralRatio = parseEther('12000'); // 120%
@@ -70,19 +72,19 @@ export function LockCollateralForm({
           minCollateralRatio,
         ],
         account,
+        chain: getChain(chainId),
       });
 
-      const receipt = await walletClient.waitForTransactionReceipt({ hash: lockHash });
+      await publicClient.waitForTransactionReceipt({ hash: lockHash });
       
       // 3. Get position ID from events (simplified - in production parse events)
       // For now, we'll call the contract to get the latest position
-      const publicClient = getPublicClient(chainId);
       const positions = await publicClient.readContract({
         address: CONTRACT_ADDRESSES.COLLATERAL_LOCK as `0x${string}`,
         abi: COLLATERAL_LOCK_ABI,
         functionName: 'getUserPositions',
         args: [account],
-      });
+      }) as readonly unknown[];
 
       const positionId = positions.length - 1;
 
@@ -92,7 +94,7 @@ export function LockCollateralForm({
         positionId,
         contractAddress: CONTRACT_ADDRESSES.COLLATERAL_LOCK,
         tokenAddress: tokenAddress.toLowerCase(),
-        tokenSymbol: SUPPORTED_TOKENS[chainId === 1 ? 'mainnet' : 'sepolia'][tokenAddress] || 'TOKEN',
+        tokenSymbol: (SUPPORTED_TOKENS[chainId === 1 ? 'mainnet' : 'sepolia'] as Record<string, string>)[tokenAddress] || 'TOKEN',
         amount: parseEther(amount).toString(),
         loanAmountUSD: loanAmountWei.toString(),
         collateralRatio: 15000, // Will be updated from contract
