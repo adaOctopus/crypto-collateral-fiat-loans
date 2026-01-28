@@ -1,8 +1,10 @@
 'use client';
 
 // Navigation bar component with wallet connection and theme toggle
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { useState } from 'react';
+import { useAccount, useDisconnect } from 'wagmi';
 import { Button } from './Button';
+import { WalletModal } from './WalletModal';
 import Link from 'next/link';
 
 interface NavbarProps {
@@ -12,8 +14,8 @@ interface NavbarProps {
 
 export function Navbar({ theme, toggleTheme }: NavbarProps) {
   const { address, isConnected } = useAccount();
-  const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
 
   return (
     <nav className="bg-white dark:bg-dark-bg border-b border-gray-200 dark:border-dark-card">
@@ -44,7 +46,7 @@ export function Navbar({ theme, toggleTheme }: NavbarProps) {
             ) : (
               <Button
                 size="sm"
-                onClick={() => connect({ connector: connectors[0] })}
+                onClick={() => setIsWalletModalOpen(true)}
               >
                 <span className="hidden sm:inline">Connect Wallet</span>
                 <span className="sm:hidden">Connect</span>
@@ -53,6 +55,10 @@ export function Navbar({ theme, toggleTheme }: NavbarProps) {
           </div>
         </div>
       </div>
+      <WalletModal
+        isOpen={isWalletModalOpen}
+        onClose={() => setIsWalletModalOpen(false)}
+      />
     </nav>
   );
 }
