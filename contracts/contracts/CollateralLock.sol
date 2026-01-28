@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./VerificationNFT.sol";
@@ -12,6 +12,7 @@ import "./VerificationNFT.sol";
  * Implements protection against front-running and sandwich attacks
  */
 contract CollateralLock is Ownable, ReentrancyGuard {
+
     VerificationNFT public verificationNFT;
     
     // Collateral data structure
