@@ -76,7 +76,7 @@ export function WithdrawForm({
 
   if (activePositions.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-dark-card rounded-lg border border-gray-200 dark:border-dark-hover p-4 sm:p-6">
         <p className="text-gray-600 dark:text-gray-400">
           No active positions available for withdrawal.
         </p>
@@ -85,8 +85,8 @@ export function WithdrawForm({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 max-w-2xl">
-      <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
+    <div className="bg-white dark:bg-dark-card rounded-lg border border-gray-200 dark:border-dark-hover p-4 sm:p-6 max-w-2xl">
+      <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gray-900 dark:text-white">
         Withdraw Collateral
       </h2>
 
@@ -99,7 +99,7 @@ export function WithdrawForm({
             value={selectedPosition || ''}
             onChange={(e) => setSelectedPosition(parseInt(e.target.value))}
             required
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+            className="w-full px-4 py-2 border border-gray-300 dark:border-dark-hover rounded-lg bg-white dark:bg-dark-bg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
           >
             <option value="">Choose a position...</option>
             {activePositions.map((position) => (
@@ -122,7 +122,7 @@ export function WithdrawForm({
               onChange={(e) => setUnlockAmount(e.target.value)}
               placeholder="0.0"
               required
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-dark-hover rounded-lg bg-white dark:bg-dark-bg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
             />
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               Maximum 25% of collateral per unlock
@@ -131,7 +131,7 @@ export function WithdrawForm({
         )}
 
         {error && (
-          <div className="p-3 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded-lg">
+          <div className="p-3 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-800 text-red-800 dark:text-red-200 rounded-lg">
             {error}
           </div>
         )}

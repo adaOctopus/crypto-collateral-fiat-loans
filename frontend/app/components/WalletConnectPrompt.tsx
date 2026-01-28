@@ -13,9 +13,9 @@ export function WalletConnectPrompt() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-md w-full mx-4 text-center">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-dark-bg px-4">
+      <div className="max-w-md w-full text-center">
+        <div className="bg-white dark:bg-dark-card rounded-lg shadow-lg dark:shadow-xl p-6 sm:p-8 border border-gray-200 dark:border-dark-hover">
           <div className="text-6xl mb-4">🔐</div>
           <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
             Connect Your Wallet

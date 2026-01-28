@@ -51,21 +51,21 @@ export function Dashboard({ userAddress }: { userAddress: string }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-dark-bg">
       <Navbar theme={theme} toggleTheme={toggleTheme} />
       
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
             Dashboard
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
             Manage your collateral positions and loans
           </p>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-dark-card overflow-x-auto">
           {[
             { id: 'positions', label: 'My Positions' },
             { id: 'lock', label: 'Lock Collateral' },
@@ -75,9 +75,9 @@ export function Dashboard({ userAddress }: { userAddress: string }) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`px-4 py-2 font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-2 font-medium transition-colors whitespace-nowrap ${
                 activeTab === tab.id
-                  ? 'border-b-2 border-primary-600 text-primary-600 dark:text-primary-400'
+                  ? 'border-b-2 border-primary-500 text-primary-500 dark:text-primary-500'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
               }`}
             >

@@ -13,7 +13,7 @@ export function PositionsList({ positions, loading, onRefresh }: PositionsListPr
   if (loading) {
     return (
       <div className="text-center py-12">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
         <p className="mt-4 text-gray-600 dark:text-gray-400">Loading positions...</p>
       </div>
     );
@@ -21,7 +21,7 @@ export function PositionsList({ positions, loading, onRefresh }: PositionsListPr
 
   if (positions.length === 0) {
     return (
-      <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+      <div className="text-center py-12 bg-white dark:bg-dark-card rounded-lg border border-gray-200 dark:border-dark-hover">
         <div className="text-6xl mb-4">📊</div>
         <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
           No Positions Yet
@@ -47,10 +47,10 @@ function PositionCard({ position }: { position: Position }) {
   const isHealthy = collateralRatio >= 1.2;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-      <div className="flex justify-between items-start mb-4">
+    <div className="bg-white dark:bg-dark-card rounded-lg border border-gray-200 dark:border-dark-hover p-4 sm:p-6 hover:shadow-lg dark:hover:shadow-xl transition-all duration-200">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
         <div>
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
             {position.tokenSymbol} Position #{position.positionId}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -58,17 +58,17 @@ function PositionCard({ position }: { position: Position }) {
           </p>
         </div>
         <div
-          className={`px-3 py-1 rounded-full text-sm font-medium ${
+          className={`px-3 py-1 rounded-full text-sm font-medium self-start ${
             isHealthy
-              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-              : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200 dark:border dark:border-green-800'
+              : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 dark:border dark:border-red-800'
           }`}
         >
           {collateralRatio.toFixed(1)}% Ratio
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-4 mb-4">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
         <StatItem
           label="Collateral Amount"
           value={`${parseFloat(position.amount) / 1e18} ${position.tokenSymbol}`}
@@ -83,11 +83,11 @@ function PositionCard({ position }: { position: Position }) {
         />
       </div>
 
-      <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+      <div className="border-t border-gray-200 dark:border-dark-hover pt-4">
         <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Payment Status
         </h4>
-        <div className="flex gap-4 text-sm">
+        <div className="flex flex-wrap gap-4 text-sm">
           <span className="text-gray-600 dark:text-gray-400">
             Paid: {position.paymentStats.paid}/{position.paymentStats.total}
           </span>
