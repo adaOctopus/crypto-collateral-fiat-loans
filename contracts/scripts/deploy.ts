@@ -45,9 +45,11 @@ async function main() {
   console.log("Network:", (await ethers.provider.getNetwork()).name);
   console.log("VerificationNFT:", verificationNFTAddress);
   console.log("CollateralLock:", collateralLockAddress);
+  console.log("MockupEditor:", mockupEditorAddress);
   console.log("\nUpdate your .env files with these addresses:");
   console.log(`VERIFICATION_NFT_CONTRACT_ADDRESS=${verificationNFTAddress}`);
   console.log(`COLLATERAL_LOCK_CONTRACT_ADDRESS=${collateralLockAddress}`);
+  console.log(`MOCKUP_EDITOR_CONTRACT_ADDRESS=${mockupEditorAddress}`);
 }
 
 main()
