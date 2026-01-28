@@ -9,7 +9,9 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "types": ["node", "hardhat"]
   },
   "include": ["./scripts", "./test"],
   "exclude": ["node_modules"]

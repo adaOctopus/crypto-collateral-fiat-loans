@@ -1,9 +1,10 @@
-import { ethers } from "hardhat";
 import * as dotenv from "dotenv";
 
 dotenv.config();
 
 async function main() {
+  const hre = await import("hardhat");
+  const { ethers } = hre as any;
   const [deployer] = await ethers.getSigners();
   
   console.log("Deploying contracts with account:", deployer.address);
