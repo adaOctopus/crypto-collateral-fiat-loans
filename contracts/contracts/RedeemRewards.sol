@@ -2,8 +2,9 @@
 pragma solidity ^0.8.20;
 import { IFace } from "./IFace.sol";
 import { IERC20 } from "./IERC20.sol";
+import { MockupEditor } from "./MockupEditor.sol";
 
-contract RedeemRewards {
+contract RedeemRewards is MockupEditor {
     // interface from the other contract named IFace.sol
     IFace private ifaceSmartContract;
     IERC20 private rewardToken;
