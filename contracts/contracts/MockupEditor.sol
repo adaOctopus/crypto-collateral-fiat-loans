@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
+import "./IFace.sol";
 
 // inheritance
 
-contract MockupEditor {
+contract MockupEditor is IFace {
    address contractOwner;
 
    // important if i do address public ContractOnwer
@@ -14,27 +15,16 @@ contract MockupEditor {
     contractOwner = msg.sender;
    }
 
-   struct User {
-    string userName;
-    uint256 userAge;
-    address userAddress;
-   }
-
    // events
    // console logs
    // we specify name of event and the parameters of the event.
    // what we want to emit.
    // cool thing is to use INDEXED keyword in order to query
-   // the event based on the indexed keyword. from a frontend or backend.
-   event UserAdded(string userName, uint256 indexed userAge, address userAddress);
-
-   // errors
-   error UnauthorizedUser(address user);
 
    modifier ownerCheckTwo() {
     if (msg.sender != contractOwner) {
       revert UnauthorizedUser(msg.sender);
-    }
+    } 
     _;
    }
 
@@ -48,7 +38,7 @@ contract MockupEditor {
    // payable: means that the function will receive ether
     // if you are accessing state from your contract you need to use view
     // otherwise you need to use pure
-   function getUsers(address _userAddress) public view returns (User memory) {
+   function getUsers(address _userAddress) external view returns (User memory) {
     // what return does is
     // User memory user = users[_userAddress];
     return users[_userAddress];
@@ -70,7 +60,7 @@ contract MockupEditor {
 
   // Payable means that the function will receive ether in order to execute the function.
    // why do we use memory word in string?
-  function addUser(string memory _userName, uint256 _userAge, address _userAddress) public onlyOwner {
+  function addUser(string memory _userName, uint256 _userAge, address _userAddress) external onlyOwner {
     // or we can do 
     // require(msg.sender == contractOwner, "Only owner can call this function");
     users[_userAddress] = User(_userName, _userAge, _userAddress);

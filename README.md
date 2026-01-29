@@ -76,12 +76,15 @@ See `.env.example` files in each directory for required environment variables.
 
 **For detailed local testing instructions, see [LOCAL_TESTING_GUIDE.md](./LOCAL_TESTING_GUIDE.md)**
 
-3. **Deploy smart contracts:**
+3. **Compile and deploy smart contracts:**
 
 ```bash
 cd contracts
+npx hardhat compile
 npx hardhat run scripts/deploy.ts --network <network>
 ```
+
+The frontend imports ABIs from `contracts/artifacts/`. After changing contracts, run `npx hardhat compile` so the frontend uses the latest ABIs.
 
 4. **Start the backend:**
 
