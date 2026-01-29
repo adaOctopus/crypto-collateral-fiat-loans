@@ -44,7 +44,7 @@ contract CollateralLock is Ownable, ReentrancyGuard {
     uint256 public constant LIQUIDATION_THRESHOLD = 11000; // 110% triggers liquidation
     uint256 public constant DEFAULT_COLLATERAL_RATIO = 15000; // 150% default
     
-    // Price oracle interface (simplified - in production use Chainlink)
+    // Price oracle interface (simplified - in production we use Chainlink)
     mapping(address => uint256) public tokenPrices; // Price in USD (scaled by 1e18)
     
     // Events
@@ -77,16 +77,33 @@ contract CollateralLock is Ownable, ReentrancyGuard {
     }
     
     constructor(address _verificationNFT, address initialOwner) Ownable(initialOwner) {
+        
         verificationNFT = VerificationNFT(_verificationNFT);
         //VERIFICATION_NFT_PRICE = 1999999999999;
 
     }
     
     /**
-     * @dev Add or remove supported collateral tokens
+     * @dev Add or remove supported collateral tokens.
+     * When enabling, verifies the address behaves like ERC20 (has code and responds to balanceOf).
      */
     function setSupportedToken(address token, bool supported) external onlyOwner {
+        if (supported) {
+            require(_isERC20Like(token), "Address is not ERC20-like");
+        }
         supportedTokens[token] = supported;
+    }
+
+    /**
+     * @dev Check if an address behaves like ERC20 (contract with balanceOf(address) returning uint256).
+     * Rejects EOAs and contracts that don't implement balanceOf.
+     */
+    function _isERC20Like(address token) private view returns (bool) {
+        if (token.code.length == 0) return false;
+        (bool success, bytes memory data) = token.staticcall(
+            abi.encodeWithSelector(IERC20.balanceOf.selector, address(this))
+        );
+        return success && data.length >= 32;
     }
     
     /**
