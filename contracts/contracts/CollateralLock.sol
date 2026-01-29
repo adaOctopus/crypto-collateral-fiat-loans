@@ -14,12 +14,15 @@ import "./VerificationNFT.sol";
 contract CollateralLock is Ownable, ReentrancyGuard {
 
     VerificationNFT public verificationNFT;
+    //verificationNFT is an NFT that is minted when a user locks collateral
+    //uint256 public immutable VERIFICATION_NFT_PRICE = 1000000000000000000; // 1 ETH
+
     
     // Collateral data structure
     struct CollateralPosition {
         address user;
         address tokenAddress;
-        uint256 amount;
+        uint128 amount;
         uint256 loanAmount; // In USD (scaled by 1e18)
         uint256 collateralRatio; // Basis points (e.g., 15000 = 150%)
         uint256 lockTimestamp;
@@ -75,6 +78,8 @@ contract CollateralLock is Ownable, ReentrancyGuard {
     
     constructor(address _verificationNFT, address initialOwner) Ownable(initialOwner) {
         verificationNFT = VerificationNFT(_verificationNFT);
+        //VERIFICATION_NFT_PRICE = 1999999999999;
+
     }
     
     /**
@@ -118,10 +123,11 @@ contract CollateralLock is Ownable, ReentrancyGuard {
         
         // Create position
         positionId = _positionCounter++;
+        require(amount <= type(uint128).max, "Amount exceeds uint128 max");
         CollateralPosition memory position = CollateralPosition({
             user: msg.sender,
             tokenAddress: tokenAddress,
-            amount: amount,
+            amount: uint128(amount),
             loanAmount: loanAmountUSD,
             collateralRatio: collateralRatio,
             lockTimestamp: block.timestamp,
@@ -175,7 +181,7 @@ contract CollateralLock is Ownable, ReentrancyGuard {
         require(newCollateralRatio >= MIN_COLLATERAL_RATIO, "Unlock would breach ratio");
         
         // Update position
-        position.amount = remainingAmount;
+        position.amount = uint128(remainingAmount);
         position.collateralRatio = newCollateralRatio;
         
         // Transfer tokens back to user
