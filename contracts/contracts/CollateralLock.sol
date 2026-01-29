@@ -180,11 +180,15 @@ contract CollateralLock is Ownable, ReentrancyGuard {
      * @dev Unlock collateral proportionally based on interest payments
      * Only unlocks if position is healthy and backend validates payment
      */
+
+
     function unlockCollateral(
         uint256 positionId,
         uint256 unlockAmount
     ) external nonReentrant {
         CollateralPosition storage position = positions[positionId];
+        
+
         require(position.isActive, "Position not active");
         require(position.user == msg.sender, "Not position owner");
         require(unlockAmount > 0, "Amount must be greater than 0");
@@ -202,7 +206,9 @@ contract CollateralLock is Ownable, ReentrancyGuard {
         position.collateralRatio = newCollateralRatio;
         
         // Transfer tokens back to user
+
         IERC20 token = IERC20(position.tokenAddress);
+        
         require(token.transfer(msg.sender, unlockAmount), "Transfer failed");
         
         emit CollateralUnlocked(msg.sender, positionId, unlockAmount);
@@ -211,6 +217,8 @@ contract CollateralLock is Ownable, ReentrancyGuard {
     /**
      * @dev Liquidate a position that has fallen below threshold
      * Anyone can call this to liquidate unhealthy positions
+     * Checked by the parallel worker service from express
+     * like a chron job that runs every minute or so.
      */
     function liquidatePosition(uint256 positionId) external nonReentrant {
         CollateralPosition storage position = positions[positionId];

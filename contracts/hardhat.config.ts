@@ -8,6 +8,7 @@ const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.20",
     settings: {
+      evmVersion: "shanghai", // 0.8.20 supports up to Shanghai; use Solidity 0.8.24+ for "cancun"
       optimizer: {
         enabled: true,
         runs: 200,
