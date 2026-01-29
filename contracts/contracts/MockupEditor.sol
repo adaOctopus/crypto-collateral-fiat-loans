@@ -38,7 +38,7 @@ contract MockupEditor is IFace {
    // payable: means that the function will receive ether
     // if you are accessing state from your contract you need to use view
     // otherwise you need to use pure
-   function getUsers(address _userAddress) external view returns (User memory) {
+   function getUsers(address _userAddress) public virtual view returns (User memory) {
     // what return does is
     // User memory user = users[_userAddress];
     return users[_userAddress];

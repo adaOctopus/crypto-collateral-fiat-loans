@@ -4,6 +4,8 @@ import { IFace } from "./IFace.sol";
 import { IERC20 } from "./IERC20.sol";
 import { MockupEditor } from "./MockupEditor.sol";
 
+// inheritance works from the right as higher priority
+// i.e MockupEditor, Iface means Iface has higher priority than MockupEditor
 contract RedeemRewards is MockupEditor {
     // interface from the other contract named IFace.sol
     IFace private ifaceSmartContract;
@@ -40,6 +42,11 @@ contract RedeemRewards is MockupEditor {
 
         (bool ok,) = payable(claimer).call{value: rewardToken.balanceOf(address(this))}("");
         require(ok, "Transfer failed");
+    }
+
+    // lets say i wnat to oveerride getUsers function from MockupEditor
+    function getUsers(address userAddress) override(MockupEditor) public view returns (User memory) {
+        return super.getUsers(userAddress);
     }
 
  
