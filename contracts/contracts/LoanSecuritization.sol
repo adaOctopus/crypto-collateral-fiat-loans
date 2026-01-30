@@ -45,10 +45,23 @@ contract LoanSecuritization is ERC1155, Ownable, ReentrancyGuard {
         loanAssetContract = address(this);
     }
 
-    function setIdentifierNFT(address _identifierNFT) external onlyOwner {
-        identifierNFT = _identifierNFT;
-    }
 
+    // {} \ x / > < = > "" + & *×  # $ }{| /``@  :  ;
+    // Symbols Keyboard Broken
+    // {} \ x / > < = > "" + & *×  # $ }{| /`` () ?  _ []
+    // Contract Address after deployment
+    //
+
+    function createLoan(address userLoanOwner, address verifierNFTUsed, uint256 verificationTokenId) internal returns (Loan storage newLoan) {
+        loans[userLoanOwner].push(Loan({
+            userLoanOwner: userLoanOwner,
+            verificationNFT: verifierNFTUsed,
+            loanId: verificationTokenId,
+            verificationTokenId: verificationTokenId,
+            fractionsSold: 0
+        }));
+        newLoan = loans[userLoanOwner][loans[userLoanOwner].length - 1];
+    }
     /**
      * @dev Securitize: caller must own Verification NFT. 
      * Mints 1 ERC721 (identifier) to caller and 10 ERC1155 (fractions) to this contract.
@@ -77,6 +90,8 @@ contract LoanSecuritization is ERC1155, Ownable, ReentrancyGuard {
             _mint(address(this), baseId + i, 1, "");
         }
 
+        createLoan(msg.sender, verificationNFT, verificationTokenId);
+
         emit LoanSecuritized(loanId, msg.sender, verificationTokenId);
         return loanId;
     }
@@ -97,6 +112,10 @@ contract LoanSecuritization is ERC1155, Ownable, ReentrancyGuard {
         _safeTransferFrom(address(this), msg.sender, tokenId, 1, "");
 
         emit FractionSold(loanId, msg.sender, fractionIndex);
+    }
+
+    function getUserLoans(address user) external view returns (Loan[] memory) {
+        return loans[user];
     }
 
     function withdraw() external onlyOwner {
