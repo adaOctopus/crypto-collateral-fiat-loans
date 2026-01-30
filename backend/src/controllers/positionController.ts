@@ -58,14 +58,14 @@ export const getUserPositions = async (req: Request, res: Response) => {
 
     // Get payment info for each position
     const positionsWithPayments = await Promise.all(
-      positions.map(async (position) => {
+      positions.map(async (position: any) => {
         const payments = await InterestPayment.find({
           positionId: position.positionId,
         });
 
-        const paidCount = payments.filter((p) => p.isPaid).length;
-        const unpaidCount = payments.filter((p) => !p.isPaid).length;
-        const lateCount = payments.filter((p) => p.isLate).length;
+        const paidCount = payments.filter((p: any) => p.isPaid).length;
+        const unpaidCount = payments.filter((p: any) => !p.isPaid).length;
+        const lateCount = payments.filter((p: any) => p.isLate).length;
 
         return {
           ...position.toObject(),
