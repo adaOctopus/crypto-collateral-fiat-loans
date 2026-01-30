@@ -13,6 +13,7 @@ contract VerificationNFTTest is Test {
         owner = address(this);
         user = address(0x1);
         nft = new VerificationNFT(owner);
+        nft.setMinter(owner); // test contract is minter so it can call mintVerificationNFT
     }
 
     function test_Deployment() public {

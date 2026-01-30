@@ -15,25 +15,44 @@ contract VerificationNFT is ERC721URIStorage, Ownable, ReentrancyGuard {
     uint256 private _tokenIdCounter;
     mapping(address => uint256[]) private _userTokens;
     mapping(uint256 => address) private _tokenToUser;
-    
+    mapping(address => mapping(uint256 => uint256)) public loanTokenTimestamps;
+
+
+
+    /// @dev Only this address (e.g. CollateralLock) can mint when users lock collateral
+    address public minter;
+
     // Credit scoring metadata
     mapping(uint256 => uint256) private _tokenCreditScore; // 0-100 scale
     mapping(uint256 => uint256) private _tokenOnTimePayments;
     mapping(uint256 => uint256) private _tokenLatePayments;
-    
+
     event NFTMinted(address indexed to, uint256 indexed tokenId, uint256 creditScore);
     event CreditScoreUpdated(uint256 indexed tokenId, uint256 newScore);
-    
+    event MinterSet(address indexed previousMinter, address indexed newMinter);
+    event LoanTokenTimestampSet(address indexed user, uint256 indexed tokenId, uint256 timestamp);
+
     constructor(address initialOwner) ERC721("Collateral Verification", "COLL") Ownable(initialOwner) {}
-    
+
     /**
-     * @dev Mint a verification NFT to a user
-     * Only callable by the CollateralLock contract
+     * @dev Set the contract allowed to mint (e.g. CollateralLock). Only owner.
+     */
+    function setMinter(address _minter) external onlyOwner {
+        address previous = minter;
+        minter = _minter;
+        emit MinterSet(previous, _minter);
+    }
+
+    /**
+     * @dev Mint a verification NFT to a user when they lock collateral.
+     * Only callable by the minter (CollateralLock).
      */
     function mintVerificationNFT(
         address to,
         string memory tokenURI
-    ) external onlyOwner returns (uint256) {
+    ) external nonReentrant returns (uint256) {
+        require(minter != address(0), "Minter not set");
+        require(msg.sender == minter, "Only minter can mint");
         uint256 tokenId = _tokenIdCounter;
         _tokenIdCounter++;
         

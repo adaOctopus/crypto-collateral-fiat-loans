@@ -33,10 +33,10 @@ async function main() {
   const mockupEditorAddress = await mockupEditor.getAddress();
   console.log("MockupEditor deployed to:", mockupEditorAddress);
 
-  // Transfer ownership of VerificationNFT to CollateralLock
-  console.log("\nTransferring VerificationNFT ownership to CollateralLock...");
-  await verificationNFT.transferOwnership(collateralLockAddress);
-  console.log("Ownership transferred");
+  // Allow CollateralLock to mint VerificationNFT when users lock collateral
+  console.log("\nSetting VerificationNFT minter to CollateralLock...");
+  await verificationNFT.setMinter(collateralLockAddress);
+  console.log("Minter set");
 
   // Set up initial supported tokens (example with common tokens)
   // In production, you would add actual token addresses

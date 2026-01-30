@@ -29,8 +29,8 @@ contract CollateralLockTest is Test {
         // Deploy CollateralLock
         collateralLock = new CollateralLock(address(verificationNFT), owner);
 
-        // Transfer NFT ownership to CollateralLock
-        verificationNFT.transferOwnership(address(collateralLock));
+        // Allow CollateralLock to mint VerificationNFT when users lock collateral
+        verificationNFT.setMinter(address(collateralLock));
 
         // Deploy mock ERC20 token
         mockToken = new MockERC20("Test Token", "TEST", INITIAL_SUPPLY);

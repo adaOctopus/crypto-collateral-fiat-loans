@@ -32,8 +32,8 @@ describe("CollateralLock", function () {
     ) as CollateralLock;
     await collateralLock.waitForDeployment();
 
-    // Transfer NFT ownership to CollateralLock
-    await verificationNFT.transferOwnership(await collateralLock.getAddress());
+    // Allow CollateralLock to mint VerificationNFT when users lock collateral
+    await verificationNFT.setMinter(await collateralLock.getAddress());
 
     // Setup: Add token as supported and set price
     await collateralLock.setSupportedToken(await mockERC20.getAddress(), true);

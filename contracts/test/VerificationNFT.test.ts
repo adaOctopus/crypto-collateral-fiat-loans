@@ -13,6 +13,7 @@ describe('VerificationNFT', function () {
     const VerificationNFTFactory = await ethers.getContractFactory('VerificationNFT');
     verificationNFT = await VerificationNFTFactory.deploy(owner.address) as VerificationNFT;
     await verificationNFT.waitForDeployment();
+    await verificationNFT.setMinter(owner.address);
   });
 
   describe('Deployment', function () {
@@ -23,7 +24,7 @@ describe('VerificationNFT', function () {
   });
 
   describe('Minting', function () {
-    it('Should allow owner to mint NFT', async function () {
+    it('Should allow minter to mint NFT', async function () {
       const tokenURI = 'https://api.example.com/nft/1';
       const tx = await verificationNFT.mintVerificationNFT(user.address, tokenURI);
       await tx.wait();
@@ -32,10 +33,10 @@ describe('VerificationNFT', function () {
       expect(await verificationNFT.tokenURI(0)).to.equal(tokenURI);
     });
 
-    it('Should reject minting from non-owner', async function () {
+    it('Should reject minting from non-minter', async function () {
       await expect(
         verificationNFT.connect(user).mintVerificationNFT(user.address, 'uri')
-      ).to.be.revertedWithCustomError(verificationNFT, 'OwnableUnauthorizedAccount');
+      ).to.be.revertedWith('Only minter can mint');
     });
   });
 
