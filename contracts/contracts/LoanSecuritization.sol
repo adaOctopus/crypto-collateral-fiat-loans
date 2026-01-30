@@ -5,21 +5,17 @@ import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "./VerificationNFT.sol";
+import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
+
 
 /**
  * @title LoanSecuritization
- * @dev User brings Verification NFT; if owner, can securitize: mints 1 ERC721 identifier + 10 ERC1155 fractions,
- * all linked to the verification NFT. Reverts if this contract already holds ERC1155 linked to that verification.
+ * @dev User brings Verification NFT; if owner, can securitize. Mints 1 token (securitization) to user + 10 fraction tokens to this contract. All linked to the verification NFT.
  */
-
- interface ISecuritizationIdentifier {
-    function mint(address to, uint256 tokenId) external;
-}
-
-contract LoanSecuritization is ERC1155, Ownable, ReentrancyGuard {
-    address public verificationNFT;
-    address public identifierNFT;
-    address public immutable loanAssetContract;
+contract LoanSecuritization is ERC1155, ERC1155Holder, ERC721Holder, Ownable, ReentrancyGuard {
+    VerificationNFT public immutable verificationNFT;
 
     uint256 public constant PRICE_PER_FRACTION = 0.0000001 ether;
     uint256 public constant FRACTIONS_PER_LOAN = 10;
@@ -38,13 +34,16 @@ contract LoanSecuritization is ERC1155, Ownable, ReentrancyGuard {
     event LoanSecuritized(uint256 indexed loanId, address indexed user, uint256 verificationTokenId);
     event FractionSold(uint256 indexed loanId, address indexed buyer, uint256 fractionIndex);
 
-    constructor( address initialOwner)
+    constructor(address _verificationNFT, address initialOwner)
         ERC1155("")
         Ownable(initialOwner)
     {
-        loanAssetContract = address(this);
+        verificationNFT = VerificationNFT(_verificationNFT);
     }
 
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, ERC1155Holder) returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
 
     // {} \ x / > < = > "" + & *×  # $ }{| /``@  :  ;
     // Symbols Keyboard Broken
@@ -63,14 +62,9 @@ contract LoanSecuritization is ERC1155, Ownable, ReentrancyGuard {
         newLoan = loans[userLoanOwner][loans[userLoanOwner].length - 1];
     }
     /**
-     * @dev Securitize: caller must own Verification NFT. 
-     * Mints 1 ERC721 (identifier) to caller and 10 ERC1155 (fractions) to this contract.
-     * This contract must hold the loan asset linked to this verification (same token id).
-     * Reverts if this contract already holds an ERC1155 linked to this verification NFT (already securitized).
-     * loanId = verificationTokenId (1:1 link).
+     * @dev Securitize: caller must own Verification NFT. Mints 1 ERC1155 (identifier, to user) + 10 ERC1155 (fractions, to this contract), all linked to verificationTokenId. Reverts if already securitized for this verification.
      */
     function securitize(uint256 verificationTokenId) external nonReentrant returns (uint256 loanId) {
-
         require(
             IERC721(verificationNFT).ownerOf(verificationTokenId) == msg.sender,
             "Not verification NFT owner"
@@ -85,12 +79,12 @@ contract LoanSecuritization is ERC1155, Ownable, ReentrancyGuard {
             "Already securitized"
         );
 
-        ISecuritizationIdentifier(identifierNFT).mint(address(this), verificationTokenId);
+        _mint(address(this), baseId, 1, "");
         for (uint256 i = 1; i <= FRACTIONS_PER_LOAN; i++) {
             _mint(address(this), baseId + i, 1, "");
         }
 
-        createLoan(msg.sender, verificationNFT, verificationTokenId);
+        createLoan(msg.sender, address(verificationNFT), verificationTokenId);
 
         emit LoanSecuritized(loanId, msg.sender, verificationTokenId);
         return loanId;

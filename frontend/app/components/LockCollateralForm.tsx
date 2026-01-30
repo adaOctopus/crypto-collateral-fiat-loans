@@ -109,13 +109,9 @@ export function LockCollateralForm({
           chain: getChain(chainId),
         });
         await publicClient.waitForTransactionReceipt({ hash: securitizeHash });
-        const loanId = await publicClient.readContract({
-          address: loanSecAddr,
-          abi: LOAN_SECURITIZATION_ABI,
-          functionName: 'loanCounter',
-        }) as bigint;
+        // In LoanSecuritization, loanId === verificationTokenId (nftTokenId); no separate counter
         await axios.post(`${API_URL}/securitized-loans`, {
-          loanId: Number(loanId) - 1,
+          loanId: nftTokenId,
           userId: userAddress.toLowerCase(),
           verificationTokenId: nftTokenId,
           positionId,

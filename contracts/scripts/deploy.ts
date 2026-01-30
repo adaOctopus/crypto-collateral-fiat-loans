@@ -38,15 +38,7 @@ async function main() {
   await verificationNFT.setMinter(collateralLockAddress);
   console.log("Minter set");
 
-  // Deploy SecuritizationIdentifier (ERC721 identifier per securitized loan)
-  console.log("\nDeploying SecuritizationIdentifier...");
-  const SecuritizationIdentifier = await ethers.getContractFactory("SecuritizationIdentifier");
-  const securitizationIdentifier = await SecuritizationIdentifier.deploy(deployer.address);
-  await securitizationIdentifier.waitForDeployment();
-  const securitizationIdentifierAddress = await securitizationIdentifier.getAddress();
-  console.log("SecuritizationIdentifier deployed to:", securitizationIdentifierAddress);
-
-  // Deploy LoanSecuritization (ERC1155 fractions + mints identifier ERC721)
+  // Deploy LoanSecuritization (mints 1 securitization token + 10 fraction tokens per loan)
   console.log("\nDeploying LoanSecuritization...");
   const LoanSecuritization = await ethers.getContractFactory("LoanSecuritization");
   const loanSecuritization = await LoanSecuritization.deploy(verificationNFTAddress, deployer.address);
@@ -54,24 +46,16 @@ async function main() {
   const loanSecuritizationAddress = await loanSecuritization.getAddress();
   console.log("LoanSecuritization deployed to:", loanSecuritizationAddress);
 
-  // Wire: LoanSecuritization mints SecuritizationIdentifier; Identifier minter = LoanSecuritization
-  console.log("\nSetting SecuritizationIdentifier minter to LoanSecuritization...");
-  await securitizationIdentifier.setMinter(loanSecuritizationAddress);
-  console.log("Setting LoanSecuritization identifier NFT...");
-  await loanSecuritization.setIdentifierNFT(securitizationIdentifierAddress);
-
   console.log("\nSetup complete!");
   console.log("\n=== Deployment Summary ===");
   console.log("Network:", (await ethers.provider.getNetwork()).name);
   console.log("VerificationNFT:", verificationNFTAddress);
   console.log("CollateralLock:", collateralLockAddress);
-  console.log("SecuritizationIdentifier:", securitizationIdentifierAddress);
   console.log("LoanSecuritization:", loanSecuritizationAddress);
   console.log("MockupEditor:", mockupEditorAddress);
   console.log("\nUpdate your .env files with these addresses:");
   console.log(`VERIFICATION_NFT_CONTRACT_ADDRESS=${verificationNFTAddress}`);
   console.log(`COLLATERAL_LOCK_CONTRACT_ADDRESS=${collateralLockAddress}`);
-  console.log(`SECURITIZATION_IDENTIFIER_CONTRACT_ADDRESS=${securitizationIdentifierAddress}`);
   console.log(`LOAN_SECURITIZATION_CONTRACT_ADDRESS=${loanSecuritizationAddress}`);
   console.log(`MOCKUP_EDITOR_CONTRACT_ADDRESS=${mockupEditorAddress}`);
 }

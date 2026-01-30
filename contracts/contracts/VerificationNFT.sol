@@ -6,11 +6,15 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
+
 /**
  * @title VerificationNFT
  * @dev NFT contract that mints verification tokens when users lock collateral
  * Also implements credit scoring through metadata
  */
+
+ // HOW TO MAKE ERC721Receiver contract
+
 contract VerificationNFT is ERC721URIStorage, Ownable, ReentrancyGuard {
     uint256 private _tokenIdCounter;
     mapping(address => uint256[]) private _userTokens;
