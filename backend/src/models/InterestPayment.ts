@@ -17,8 +17,8 @@ export const InterestPaymentSchemaZod = z.object({
 
 export type InterestPaymentInput = z.infer<typeof InterestPaymentSchemaZod>;
 
-// Mongoose schema
-interface IInterestPayment extends Document {
+// Mongoose schema (exported so return types can be named elsewhere)
+export interface IInterestPayment extends Document {
   userId: string;
   positionId: number;
   amount: string;

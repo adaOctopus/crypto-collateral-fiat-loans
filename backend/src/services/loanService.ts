@@ -1,4 +1,4 @@
-import { InterestPayment } from '../models/InterestPayment';
+import { InterestPayment, IInterestPayment } from '../models/InterestPayment';
 import { CollateralPosition } from '../models/CollateralPosition';
 import { LOAN_RULES } from '../config/constants';
 import { ethers } from 'ethers';
@@ -89,7 +89,7 @@ export class LoanService {
     userId: string,
     positionId: number,
     paidDate: Date = new Date()
-  ) {
+  ): Promise<IInterestPayment> {
     const payment = await InterestPayment.findOne({
       userId,
       positionId,
