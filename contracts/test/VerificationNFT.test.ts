@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { ethers } from 'hardhat';
+import '@nomicfoundation/hardhat-chai-matchers';
 import { VerificationNFT } from '../typechain-types';
 
 describe('VerificationNFT', function () {
@@ -8,6 +8,8 @@ describe('VerificationNFT', function () {
   let user: any;
 
   beforeEach(async function () {
+    const hre = await import('hardhat');
+    const { ethers } = hre as any;
     [owner, user] = await ethers.getSigners();
 
     const VerificationNFTFactory = await ethers.getContractFactory('VerificationNFT');
