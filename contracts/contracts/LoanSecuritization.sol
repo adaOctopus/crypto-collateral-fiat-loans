@@ -24,8 +24,17 @@ contract LoanSecuritization is ERC1155, Ownable, ReentrancyGuard {
     uint256 public constant PRICE_PER_FRACTION = 0.0000001 ether;
     uint256 public constant FRACTIONS_PER_LOAN = 10;
 
-    mapping(uint256 => uint256) public fractionsSold; // verificationTokenId (loanId) => count sold (0..10)
+    struct Loan {
+        address userLoanOwner;
+        address verificationNFT;
+        uint256 loanId;
+        uint256 verificationTokenId;
+        uint256 fractionsSold;
+    }
 
+    mapping(uint256 => uint256) public fractionsSold; // verificationTokenId (loanId) => count sold (0..10)
+    mapping(uint256 => bool) public isSecuritized; // verificationTokenId (loanId) => true/false
+    mapping(address => Loan[]) public loans;
     event LoanSecuritized(uint256 indexed loanId, address indexed user, uint256 verificationTokenId);
     event FractionSold(uint256 indexed loanId, address indexed buyer, uint256 fractionIndex);
 
@@ -48,8 +57,7 @@ contract LoanSecuritization is ERC1155, Ownable, ReentrancyGuard {
      * loanId = verificationTokenId (1:1 link).
      */
     function securitize(uint256 verificationTokenId) external nonReentrant returns (uint256 loanId) {
-        require(verificationNFT != address(0), "Verification NFT not set");
-        require(identifierNFT != address(0), "Identifier NFT not set");
+
         require(
             IERC721(verificationNFT).ownerOf(verificationTokenId) == msg.sender,
             "Not verification NFT owner"
@@ -64,7 +72,7 @@ contract LoanSecuritization is ERC1155, Ownable, ReentrancyGuard {
             "Already securitized"
         );
 
-        ISecuritizationIdentifier(identifierNFT).mint(msg.sender, verificationTokenId);
+        ISecuritizationIdentifier(identifierNFT).mint(address(this), verificationTokenId);
         for (uint256 i = 1; i <= FRACTIONS_PER_LOAN; i++) {
             _mint(address(this), baseId + i, 1, "");
         }
