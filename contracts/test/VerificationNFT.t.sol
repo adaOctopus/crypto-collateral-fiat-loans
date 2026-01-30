@@ -101,4 +101,27 @@ contract VerificationNFTTest is Test {
         vm.expectRevert();
         nft.mintVerificationNFT(user, "uri");
     }
+
+    function test_GetLoanTokenTimestamp() public {
+        string memory tokenURI = "https://api.example.com/nft/0";
+        uint256 tokenId = nft.mintVerificationNFT(user, tokenURI);
+
+        assertEq(nft.getLoanTokenTimestamp(user, tokenId), block.timestamp);
+    }
+
+    function test_GetAllTokensByUser() public {
+        string memory tokenURI1 = "https://api.example.com/nft/0";
+        string memory tokenURI2 = "https://api.example.com/nft/1";
+
+        uint256 tokenId1 = nft.mintVerificationNFT(user, tokenURI1);
+        uint256 tokenId2 = nft.mintVerificationNFT(user, tokenURI2);
+
+        VerificationNFT.TokenWithTimestamp[] memory tokens = nft.getAllTokensByUser(user);
+        assertEq(tokens.length, 2);
+        assertEq(tokens[0].tokenId, tokenId1);
+        assertEq(tokens[0].timestamp, block.timestamp);
+        assertEq(tokens[1].tokenId, tokenId2);
+        assertEq(tokens[1].timestamp, block.timestamp);
+    }
+
 }
