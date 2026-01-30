@@ -100,6 +100,15 @@ cd frontend
 npm run dev
 ```
 
+### Demo on Sepolia with WETH
+
+To demo the app on Sepolia using ETH as collateral:
+
+1. Deploy contracts to Sepolia (`npx hardhat run scripts/deploy.ts --network sepolia`). The deploy script automatically enables **WETH** (Wrapped ETH) on CollateralLock and sets the ETH price (default 2000 USD; override with `ETH_PRICE_USD` in `contracts/.env`).
+2. Get Sepolia ETH from a faucet (e.g. [Alchemy](https://sepoliafaucet.com/)).
+3. Wrap some ETH into WETH (e.g. on [Sepolia Etherscan](https://sepolia.etherscan.io/) → WETH contract → Write → `deposit()`).
+4. In the frontend, select **WETH (Wrapped ETH)** as the collateral token, enter amount and loan amount in USD, then lock collateral.
+
 ## Documentation
 
 - [Local Testing Guide](./LOCAL_TESTING_GUIDE.md) - **Complete guide to run and test locally**

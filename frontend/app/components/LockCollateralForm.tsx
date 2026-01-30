@@ -2,24 +2,16 @@
 
 // Form component for locking collateral and creating a loan position
 import { useState } from 'react';
-import { useAccount, useChainId } from 'wagmi';
-import { parseEther, formatEther } from 'viem';
+import { useChainId } from 'wagmi';
+import { parseEther } from 'viem';
 import { Button } from './Button';
 import { getWalletClient, getPublicClient, getChain, COLLATERAL_LOCK_ABI, LOAN_SECURITIZATION_ABI, ERC20_ABI, CONTRACT_ADDRESSES } from '../lib/contracts';
+import { getTokenAddress, getTokenSymbol, PRESET_TOKENS } from '../lib/supportedTokens';
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
-// Common token addresses (update for your network)
-const SUPPORTED_TOKENS = {
-  sepolia: {
-    '0x...': 'USDC', // Add actual testnet token addresses
-  },
-  mainnet: {
-    '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48': 'USDC',
-    '0xdAC17F958D2ee523a2206206994597C13D831ec7': 'USDT',
-  },
-};
+const CUSTOM_VALUE = 'CUSTOM';
 
 export function LockCollateralForm({
   userAddress,
@@ -28,16 +20,24 @@ export function LockCollateralForm({
   userAddress: string;
   onSuccess: () => void;
 }) {
-  const [tokenAddress, setTokenAddress] = useState('');
+  const [tokenPreset, setTokenPreset] = useState<string>('WETH');
+  const [customTokenAddress, setCustomTokenAddress] = useState('');
   const [amount, setAmount] = useState('');
   const [loanAmount, setLoanAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const chainId = useChainId();
 
+  const tokenAddress =
+    tokenPreset === CUSTOM_VALUE ? customTokenAddress : getTokenAddress(tokenPreset, chainId);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (!tokenAddress?.trim()) {
+      setError('Select a token or enter a custom contract address.');
+      return;
+    }
     setLoading(true);
 
     try {
@@ -125,7 +125,7 @@ export function LockCollateralForm({
         positionId,
         contractAddress: CONTRACT_ADDRESSES.COLLATERAL_LOCK,
         tokenAddress: tokenAddress.toLowerCase(),
-        tokenSymbol: (SUPPORTED_TOKENS[chainId === 1 ? 'mainnet' : 'sepolia'] as Record<string, string>)[tokenAddress] || 'TOKEN',
+        tokenSymbol: getTokenSymbol(tokenAddress, chainId),
         amount: parseEther(amount).toString(),
         loanAmountUSD: loanAmountWei.toString(),
         collateralRatio: 15000,
@@ -137,7 +137,8 @@ export function LockCollateralForm({
       onSuccess();
       setAmount('');
       setLoanAmount('');
-      setTokenAddress('');
+      setTokenPreset('WETH');
+      setCustomTokenAddress('');
     } catch (err: any) {
       setError(err.message || 'Failed to lock collateral');
     } finally {
@@ -154,21 +155,39 @@ export function LockCollateralForm({
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Token Address
+            Collateral Token
           </label>
-          <input
-            type="text"
-            value={tokenAddress}
-            onChange={(e) => setTokenAddress(e.target.value)}
-            placeholder="0x..."
-            required
+          <select
+            value={tokenPreset}
+            onChange={(e) => setTokenPreset(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 dark:border-dark-hover rounded-lg bg-white dark:bg-dark-bg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
-          />
+          >
+            {PRESET_TOKENS.map((t) => (
+              <option key={t.key} value={t.value}>
+                {t.label}
+              </option>
+            ))}
+            <option value={CUSTOM_VALUE}>Custom address</option>
+          </select>
+          {tokenPreset === CUSTOM_VALUE && (
+            <input
+              type="text"
+              value={customTokenAddress}
+              onChange={(e) => setCustomTokenAddress(e.target.value)}
+              placeholder="0x..."
+              className="mt-2 w-full px-4 py-2 border border-gray-300 dark:border-dark-hover rounded-lg bg-white dark:bg-dark-bg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+            />
+          )}
+          {tokenPreset === 'WETH' && (
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Wrapped ETH — wrap native ETH on Sepolia to use as collateral for the demo.
+            </p>
+          )}
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Collateral Amount
+            Collateral Amount {tokenPreset !== CUSTOM_VALUE && `(${tokenPreset})`}
           </label>
           <input
             type="number"

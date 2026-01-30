@@ -26,6 +26,21 @@ async function main() {
   const collateralLockAddress = await collateralLock.getAddress();
   console.log("CollateralLock deployed to:", collateralLockAddress);
 
+  // Enable WETH as collateral so users can lock wrapped ETH (e.g. for Sepolia demo)
+  const network = await ethers.provider.getNetwork();
+  const chainId = Number(network.chainId);
+  const WETH_SEPOLIA = "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14";
+  const WETH_MAINNET = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+  const wethAddress = chainId === 11155111 ? WETH_SEPOLIA : chainId === 1 ? WETH_MAINNET : null;
+  if (wethAddress) {
+    console.log("\nEnabling WETH as collateral...");
+    await collateralLock.setSupportedToken(wethAddress, true);
+    const ethPriceUSD = process.env.ETH_PRICE_USD || "2000";
+    const ethPriceWei = ethers.parseEther(ethPriceUSD);
+    await collateralLock.setTokenPrice(wethAddress, ethPriceWei);
+    console.log("WETH enabled at", wethAddress, "with price", ethPriceUSD, "USD");
+  }
+
   console.log("\nDeploying MockupEditor...");
   const MockupEditor = await ethers.getContractFactory("MockupEditor");
   const mockupEditor = await MockupEditor.deploy();
