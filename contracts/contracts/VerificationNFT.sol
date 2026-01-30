@@ -15,9 +15,13 @@ contract VerificationNFT is ERC721URIStorage, Ownable, ReentrancyGuard {
     uint256 private _tokenIdCounter;
     mapping(address => uint256[]) private _userTokens;
     mapping(uint256 => address) private _tokenToUser;
-    mapping(address => mapping(uint256 => uint256)) public loanTokenTimestamps;
+    mapping(address => mapping(uint256 => uint256)) private _loanTokenTimestamps;
 
-
+    /// @dev Struct for returning token id and mint timestamp together
+    struct TokenWithTimestamp {
+        uint256 tokenId;
+        uint256 timestamp;
+    }
 
     /// @dev Only this address (e.g. CollateralLock) can mint when users lock collateral
     address public minter;
@@ -61,11 +65,36 @@ contract VerificationNFT is ERC721URIStorage, Ownable, ReentrancyGuard {
         _userTokens[to].push(tokenId);
         _tokenToUser[tokenId] = to;
         _tokenCreditScore[tokenId] = 50; // Initial score
-        
+        // Setting timestamp when user locks collateral
+        _loanTokenTimestamps[to][tokenId] = block.timestamp;
+        emit LoanTokenTimestampSet(to, tokenId, block.timestamp);
         emit NFTMinted(to, tokenId, 50);
         return tokenId;
     }
-    
+
+    /**
+     * @dev Get the timestamp when user locked collateral for a token
+     */
+    function getLoanTokenTimestamp(address user, uint256 tokenId) external view returns (uint256) {
+        return _loanTokenTimestamps[user][tokenId];
+    }
+
+    /**
+     * @dev Get all tokens for a user with their mint timestamps as a list of { tokenId, timestamp }
+     */
+    function getAllTokensByUser(address user) external view returns (TokenWithTimestamp[] memory) {
+        uint256[] memory tokenIds = _userTokens[user];
+        TokenWithTimestamp[] memory result = new TokenWithTimestamp[](tokenIds.length);
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            result[i] = TokenWithTimestamp({
+                tokenId: tokenIds[i],
+                timestamp: _loanTokenTimestamps[user][tokenIds[i]]
+            });
+        }
+        return result;
+    }
+
+
     /**
      * @dev Update credit score for a token (called by backend via owner)
      */
