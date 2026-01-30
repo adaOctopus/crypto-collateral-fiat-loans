@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import userRoutes from './routes/userRoutes';
 import positionRoutes from './routes/positionRoutes';
 import paymentRoutes from './routes/paymentRoutes';
+import securitizedLoanRoutes from './routes/securitizedLoanRoutes';
 import { LoanService } from './services/loanService';
 
 dotenv.config();
@@ -20,6 +21,7 @@ app.use(express.json());
 app.use('/api/users', userRoutes);
 app.use('/api/positions', positionRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/securitized-loans', securitizedLoanRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useAccount, useChainId } from 'wagmi';
 import { parseEther, formatEther } from 'viem';
 import { Button } from './Button';
-import { getWalletClient, getPublicClient, getChain, COLLATERAL_LOCK_ABI, ERC20_ABI, CONTRACT_ADDRESSES } from '../lib/contracts';
+import { getWalletClient, getPublicClient, getChain, COLLATERAL_LOCK_ABI, LOAN_SECURITIZATION_ABI, ERC20_ABI, CONTRACT_ADDRESSES } from '../lib/contracts';
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
@@ -88,7 +88,42 @@ export function LockCollateralForm({
 
       const positionId = positions.length - 1;
 
-      // 4. Register position in backend
+      // 4. Get position to read nftTokenId
+      const position = await publicClient.readContract({
+        address: CONTRACT_ADDRESSES.COLLATERAL_LOCK as `0x${string}`,
+        abi: COLLATERAL_LOCK_ABI,
+        functionName: 'getPosition',
+        args: [BigInt(positionId)],
+      }) as { nftTokenId: bigint; [k: string]: unknown };
+      const nftTokenId = Number(position.nftTokenId ?? 0);
+
+      // 5. Securitize: mint loan + 10 fractions (user owns Verification NFT)
+      const loanSecAddr = CONTRACT_ADDRESSES.LOAN_SECURITIZATION as `0x${string}`;
+      if (loanSecAddr) {
+        const securitizeHash = await walletClient.writeContract({
+          address: loanSecAddr,
+          abi: LOAN_SECURITIZATION_ABI,
+          functionName: 'securitize',
+          args: [BigInt(nftTokenId)],
+          account,
+          chain: getChain(chainId),
+        });
+        await publicClient.waitForTransactionReceipt({ hash: securitizeHash });
+        const loanId = await publicClient.readContract({
+          address: loanSecAddr,
+          abi: LOAN_SECURITIZATION_ABI,
+          functionName: 'loanCounter',
+        }) as bigint;
+        await axios.post(`${API_URL}/securitized-loans`, {
+          loanId: Number(loanId) - 1,
+          userId: userAddress.toLowerCase(),
+          verificationTokenId: nftTokenId,
+          positionId,
+          contractAddress: CONTRACT_ADDRESSES.LOAN_SECURITIZATION,
+        });
+      }
+
+      // 6. Register position in backend
       await axios.post(`${API_URL}/positions`, {
         userId: userAddress.toLowerCase(),
         positionId,
@@ -97,8 +132,8 @@ export function LockCollateralForm({
         tokenSymbol: (SUPPORTED_TOKENS[chainId === 1 ? 'mainnet' : 'sepolia'] as Record<string, string>)[tokenAddress] || 'TOKEN',
         amount: parseEther(amount).toString(),
         loanAmountUSD: loanAmountWei.toString(),
-        collateralRatio: 15000, // Will be updated from contract
-        nftTokenId: 0, // Will be updated from contract
+        collateralRatio: 15000,
+        nftTokenId,
         lockTimestamp: new Date(),
         isActive: true,
       });

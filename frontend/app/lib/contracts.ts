@@ -6,16 +6,19 @@ import { createWalletClient, custom } from 'viem';
 // Import ABIs from Hardhat artifacts - always use latest after compile
 import CollateralLockArtifact from '@contracts/artifacts/contracts/CollateralLock.sol/CollateralLock.json';
 import VerificationNFTArtifact from '@contracts/artifacts/contracts/VerificationNFT.sol/VerificationNFT.json';
+import LoanSecuritizationArtifact from '@contracts/artifacts/contracts/LoanSecuritization.sol/LoanSecuritization.json';
 
 // Contract addresses - update .env after deployment
 export const CONTRACT_ADDRESSES = {
   COLLATERAL_LOCK: process.env.NEXT_PUBLIC_COLLATERAL_LOCK_ADDRESS || '',
   VERIFICATION_NFT: process.env.NEXT_PUBLIC_VERIFICATION_NFT_ADDRESS || '',
+  LOAN_SECURITIZATION: process.env.NEXT_PUBLIC_LOAN_SECURITIZATION_ADDRESS || '',
 } as const;
 
 // Use full ABIs from Hardhat artifacts (auto-updated on compile)
 export const COLLATERAL_LOCK_ABI = CollateralLockArtifact.abi;
 export const VERIFICATION_NFT_ABI = VerificationNFTArtifact.abi;
+export const LOAN_SECURITIZATION_ABI = LoanSecuritizationArtifact.abi;
 
 // ERC20 ABI for token approvals (standard interface, rarely changes)
 export const ERC20_ABI = [

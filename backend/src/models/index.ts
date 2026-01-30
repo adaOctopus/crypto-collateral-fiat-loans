@@ -9,3 +9,8 @@ export {
   InterestPaymentSchemaZod,
   type InterestPaymentInput,
 } from './InterestPayment';
+export {
+  SecuritizedLoan,
+  SecuritizedLoanSchemaZod,
+  type SecuritizedLoanInput,
+} from './SecuritizedLoan';

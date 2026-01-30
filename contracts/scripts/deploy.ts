@@ -38,17 +38,25 @@ async function main() {
   await verificationNFT.setMinter(collateralLockAddress);
   console.log("Minter set");
 
-  // Set up initial supported tokens (example with common tokens)
-  // In production, you would add actual token addresses
+  // Deploy LoanSecuritization (ERC1155: loan + fraction tokens)
+  console.log("\nDeploying LoanSecuritization...");
+  const LoanSecuritization = await ethers.getContractFactory("LoanSecuritization");
+  const loanSecuritization = await LoanSecuritization.deploy(verificationNFTAddress, deployer.address);
+  await loanSecuritization.waitForDeployment();
+  const loanSecuritizationAddress = await loanSecuritization.getAddress();
+  console.log("LoanSecuritization deployed to:", loanSecuritizationAddress);
+
   console.log("\nSetup complete!");
   console.log("\n=== Deployment Summary ===");
   console.log("Network:", (await ethers.provider.getNetwork()).name);
   console.log("VerificationNFT:", verificationNFTAddress);
   console.log("CollateralLock:", collateralLockAddress);
+  console.log("LoanSecuritization:", loanSecuritizationAddress);
   console.log("MockupEditor:", mockupEditorAddress);
   console.log("\nUpdate your .env files with these addresses:");
   console.log(`VERIFICATION_NFT_CONTRACT_ADDRESS=${verificationNFTAddress}`);
   console.log(`COLLATERAL_LOCK_CONTRACT_ADDRESS=${collateralLockAddress}`);
+  console.log(`LOAN_SECURITIZATION_CONTRACT_ADDRESS=${loanSecuritizationAddress}`);
   console.log(`MOCKUP_EDITOR_CONTRACT_ADDRESS=${mockupEditorAddress}`);
 }
 

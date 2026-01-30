@@ -8,6 +8,7 @@ import { PositionsList } from './PositionsList';
 import { LockCollateralForm } from './LockCollateralForm';
 import { BankAccountForm } from './BankAccountForm';
 import { WithdrawForm } from './WithdrawForm';
+import { BuyLoanAssetsForm } from './BuyLoanAssetsForm';
 import { useTheme } from './ThemeProvider';
 import axios from 'axios';
 
@@ -32,7 +33,8 @@ interface Position {
 export function Dashboard({ userAddress }: { userAddress: string }) {
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'positions' | 'lock' | 'withdraw' | 'bank'>('positions');
+  const [backendError, setBackendError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'positions' | 'lock' | 'withdraw' | 'bank' | 'buy'>('positions');
   const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
@@ -40,10 +42,17 @@ export function Dashboard({ userAddress }: { userAddress: string }) {
   }, [userAddress]);
 
   const fetchPositions = async () => {
+    setBackendError(null);
+    setLoading(true);
     try {
-      const response = await axios.get(`${API_URL}/positions/user/${userAddress}`);
+      const response = await axios.get(`${API_URL}/positions/user/${userAddress}`, { timeout: 10000 });
       setPositions(response.data.positions || []);
-    } catch (error) {
+    } catch (error: unknown) {
+      setPositions([]);
+      const msg = axios.isAxiosError(error) && error.code === 'ERR_NETWORK'
+        ? 'Cannot reach backend. Is it running? Start it with: cd backend && npm run dev'
+        : (error as Error).message || 'Failed to load positions';
+      setBackendError(msg);
       console.error('Failed to fetch positions:', error);
     } finally {
       setLoading(false);
@@ -64,12 +73,26 @@ export function Dashboard({ userAddress }: { userAddress: string }) {
           </p>
         </div>
 
+        {backendError && (
+          <div className="mb-4 p-4 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 text-sm flex flex-wrap items-center justify-between gap-2">
+            <span>{backendError}</span>
+            <button
+              type="button"
+              onClick={() => fetchPositions()}
+              className="px-3 py-1.5 rounded-lg bg-amber-200 dark:bg-amber-800 hover:bg-amber-300 dark:hover:bg-amber-700 font-medium"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         {/* Tabs */}
         <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-dark-card overflow-x-auto">
           {[
             { id: 'positions', label: 'My Positions' },
             { id: 'lock', label: 'Lock Collateral' },
             { id: 'withdraw', label: 'Withdraw' },
+            { id: 'buy', label: 'Buy Loan Assets' },
             { id: 'bank', label: 'Bank Account' },
           ].map((tab) => (
             <button
@@ -109,6 +132,8 @@ export function Dashboard({ userAddress }: { userAddress: string }) {
             onSuccess={fetchPositions}
           />
         )}
+
+        {activeTab === 'buy' && <BuyLoanAssetsForm />}
 
         {activeTab === 'bank' && (
           <BankAccountForm userAddress={userAddress} />
