@@ -3,7 +3,7 @@
 // Form component for locking collateral and creating a loan position
 import { useState } from 'react';
 import { useChainId } from 'wagmi';
-import { parseEther, decodeEventLog } from 'viem';
+import { parseEther, decodeEventLog, decodeErrorResult, encodeFunctionData } from 'viem';
 import { Button } from './Button';
 import { getWalletClient, getPublicClient, getChain, COLLATERAL_LOCK_ABI, LOAN_SECURITIZATION_ABI, ERC20_ABI, CONTRACT_ADDRESSES, MAX_GAS_LIMIT, WAIT_RECEIPT_OPTIONS } from '../lib/contracts';
 import { getTokenAddress, getTokenSymbol, PRESET_TOKENS } from '../lib/supportedTokens';
@@ -16,11 +16,57 @@ const CUSTOM_VALUE = 'CUSTOM';
 /** Step labels shown during lock flow to keep users engaged */
 const LOCK_STEPS = [
   'Approving token…',
-  'Locking collateral…',
+  'Checking & locking collateral…',
   'Confirming on chain…',
   'Minting loan…',
   'Saving position…',
 ] as const;
+
+/** Block explorer tx URL for debugging and user messages */
+function getTxUrl(hash: string, chainId: number): string {
+  const base = chainId === 1 ? 'https://etherscan.io' : 'https://sepolia.etherscan.io';
+  return `${base}/tx/${hash}`;
+}
+
+type ClientWithRequest = { request: (args: { method: string; params: unknown[] }) => Promise<unknown> };
+
+/** Run eth_call to simulate lockCollateral; on revert, decode RPC error.data and return require() message */
+async function getLockRevertReason(
+  publicClient: ClientWithRequest,
+  contractAddress: `0x${string}`,
+  encodedCall: `0x${string}`,
+  from: `0x${string}`,
+  abi: readonly unknown[]
+): Promise<string | null> {
+  try {
+    await publicClient.request({
+      method: 'eth_call',
+      params: [{ to: contractAddress, from, data: encodedCall }, 'latest'],
+    });
+    return null;
+  } catch (err: unknown) {
+    const o = err && typeof err === 'object' ? (err as Record<string, unknown>) : {};
+    let data: string | null = null;
+    if (typeof o.data === 'string' && o.data.startsWith('0x')) data = o.data;
+    else if (o.cause && typeof o.cause === 'object') {
+      const c = (o.cause as Record<string, unknown>).data;
+      if (typeof c === 'string' && c.startsWith('0x')) data = c;
+    }
+    else if (o.error && typeof o.error === 'object') {
+      const e = (o.error as Record<string, unknown>).data;
+      if (typeof e === 'string' && e.startsWith('0x')) data = e;
+    }
+    if (!data || data.length < 10) return null;
+    try {
+      const decoded = decodeErrorResult({ abi, data: data as `0x${string}` });
+      const first = (decoded.args as readonly unknown[])?.[0];
+      if (typeof first === 'string') return first;
+    } catch {
+      /* ignore decode failure */
+    }
+    return null;
+  }
+}
 
 export function LockCollateralForm({
   userAddress,
@@ -53,11 +99,17 @@ export function LockCollateralForm({
     setLoading(true);
     setStepIndex(0);
 
+    const log = (step: string, data?: unknown) => {
+      console.log('[LockCollateral]', step, data !== undefined ? data : '');
+    };
+
     try {
       const walletClient = getWalletClient();
       const publicClient = getPublicClient(chainId);
       const [account] = await walletClient.getAddresses();
       const collateralLockAddr = CONTRACT_ADDRESSES.COLLATERAL_LOCK as `0x${string}`;
+
+      log('start', { account, tokenAddress, amount, loanAmount, chainId });
 
       // 1. Approve token spending
       setStepIndex(0);
@@ -70,54 +122,134 @@ export function LockCollateralForm({
         chain: getChain(chainId),
         gas: MAX_GAS_LIMIT,
       });
+      log('approve tx sent', { hash: approveHash });
       await publicClient.waitForTransactionReceipt({ hash: approveHash, ...WAIT_RECEIPT_OPTIONS });
+      log('approve confirmed');
 
-      // 2. Lock collateral
+      // 2. eth_call first to get exact revert reason (require("string")) if lock would fail
       setStepIndex(1);
       const loanAmountWei = parseEther(loanAmount);
       const minCollateralRatioBps = 12000n;
+      const lockArgs = [
+        tokenAddress as `0x${string}`,
+        parseEther(amount),
+        loanAmountWei,
+        minCollateralRatioBps,
+      ] as const;
+      const encodedLock = encodeFunctionData({
+        abi: COLLATERAL_LOCK_ABI,
+        functionName: 'lockCollateral',
+        args: lockArgs,
+      });
+      const revertReason = await getLockRevertReason(
+        publicClient as unknown as ClientWithRequest,
+        collateralLockAddr,
+        encodedLock,
+        account,
+        COLLATERAL_LOCK_ABI as readonly unknown[]
+      );
+      if (revertReason) {
+        log('lock would revert', { reason: revertReason });
+        throw new Error(revertReason);
+      }
+      log('lock simulation ok');
+
+      // 3. Lock collateral (simulation passed)
       const lockHash = await walletClient.writeContract({
         address: collateralLockAddr,
         abi: COLLATERAL_LOCK_ABI,
         functionName: 'lockCollateral',
-        args: [
-          tokenAddress as `0x${string}`,
-          parseEther(amount),
-          loanAmountWei,
-          minCollateralRatioBps,
-        ],
+        args: lockArgs,
         account,
         chain: getChain(chainId),
         gas: MAX_GAS_LIMIT,
       });
+      log('lock tx sent', { hash: lockHash, explorer: getTxUrl(lockHash, chainId) });
 
-      // 3. Get positionId and nftTokenId from tx receipt (no RPC lag)
+      // 4. Get positionId and nftTokenId: from tx receipt event first, then fallback to chain read
       setStepIndex(2);
-      const receipt = await publicClient.waitForTransactionReceipt({ hash: lockHash, ...WAIT_RECEIPT_OPTIONS });
-      const contractLogs = receipt.logs.filter(
-        (log) => log.address?.toLowerCase() === collateralLockAddr.toLowerCase()
-      );
+      let receipt;
+      try {
+        receipt = await publicClient.waitForTransactionReceipt({ hash: lockHash, ...WAIT_RECEIPT_OPTIONS });
+      } catch (receiptErr: unknown) {
+        const msg = receiptErr instanceof Error ? receiptErr.message : String(receiptErr);
+        const isReceiptNotFound = /could not be found|receipt.*not found/i.test(msg);
+        log('waitForTransactionReceipt failed', { error: msg, hash: lockHash });
+        if (isReceiptNotFound) {
+          const explorerUrl = getTxUrl(lockHash, chainId);
+          throw new Error(
+            `Transaction was sent but confirmation timed out. Check status: ${explorerUrl} — If it shows "Fail", the contract reverted (e.g. insufficient collateral, token not supported, or token price not set).`
+          );
+        }
+        throw receiptErr;
+      }
+
+      log('receipt received', { status: receipt.status, blockNumber: receipt.blockNumber });
+
+      if (receipt.status === 'reverted') {
+        const revertMsg = await getLockRevertReason(
+          publicClient as unknown as ClientWithRequest,
+          collateralLockAddr,
+          encodedLock,
+          account,
+          COLLATERAL_LOCK_ABI as readonly unknown[]
+        );
+        log('tx reverted', { revertMsg });
+        throw new Error(revertMsg ?? 'Transaction reverted on-chain.');
+      }
+
       let positionId: number | null = null;
       let nftTokenId: number | null = null;
-      for (const log of contractLogs) {
+      // Try to read from CollateralLocked event (scan all logs in case address format differs)
+      for (const evtLog of receipt.logs) {
         try {
           const decoded = decodeEventLog({
             abi: COLLATERAL_LOCK_ABI,
-            data: log.data,
-            topics: log.topics,
+            data: evtLog.data,
+            topics: evtLog.topics,
           });
           if (decoded.eventName === 'CollateralLocked') {
             const args = decoded.args as unknown as { positionId: bigint; nftTokenId: bigint };
             positionId = Number(args.positionId);
             nftTokenId = Number(args.nftTokenId);
+            log('position from event', { positionId, nftTokenId });
             break;
           }
         } catch {
           continue;
         }
       }
+
+      // Fallback: read from chain (RPC state may lag, so retry)
       if (positionId === null || nftTokenId === null) {
-        throw new Error('Could not read position from transaction. Please try again or refresh.');
+        const maxAttempts = 10;
+        const delayMs = 1500;
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+          const positions = (await publicClient.readContract({
+            address: collateralLockAddr,
+            abi: COLLATERAL_LOCK_ABI,
+            functionName: 'getUserPositions',
+            args: [account],
+          })) as readonly unknown[];
+          if (positions?.length && positions.length > 0) {
+            const idx = positions.length - 1;
+            const position = await publicClient.readContract({
+              address: collateralLockAddr,
+              abi: COLLATERAL_LOCK_ABI,
+              functionName: 'getPosition',
+              args: [BigInt(idx)],
+            }) as { nftTokenId: bigint };
+            positionId = idx;
+            nftTokenId = Number(position.nftTokenId ?? 0);
+            log('position from chain fallback', { positionId: idx, nftTokenId });
+            break;
+          }
+          if (attempt < maxAttempts - 1) await new Promise((r) => setTimeout(r, delayMs));
+        }
+      }
+
+      if (positionId === null || nftTokenId === null) {
+        throw new Error('Position not found after lock. Wait a minute and refresh the page; your collateral is safe.');
       }
 
       // 4. Securitize: mint loan + fractions (user owns Verification NFT)
@@ -145,6 +277,7 @@ export function LockCollateralForm({
 
       // 5. Register position in backend
       setStepIndex(4);
+      log('POST positions', { positionId, nftTokenId });
       await axios.post(`${API_URL}/positions`, {
         userId: userAddress.toLowerCase(),
         positionId,
@@ -159,6 +292,7 @@ export function LockCollateralForm({
         isActive: true,
       });
 
+      log('success');
       setSuccessMessage('Collateral locked successfully. Position and securitized loan recorded.');
       onSuccess();
       setAmount('');
@@ -166,6 +300,7 @@ export function LockCollateralForm({
       setTokenPreset('WETH');
       setCustomTokenAddress('');
     } catch (err: any) {
+      console.error('[LockCollateral] error', err?.message ?? err?.shortMessage ?? err);
       setSuccessMessage(null);
       const msg = err?.message ?? err?.shortMessage ?? 'Failed to lock collateral';
       const isTokenNotSupported =
@@ -181,11 +316,25 @@ export function LockCollateralForm({
     }
   };
 
+  const isSepolia = chainId === 11155111;
+  const isMainnet = chainId === 1;
+
   return (
     <div className="bg-white dark:bg-dark-card rounded-lg border border-gray-200 dark:border-dark-hover p-4 sm:p-6 max-w-2xl">
       <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gray-900 dark:text-white">
         Lock Collateral
       </h2>
+
+      {!isSepolia && !isMainnet && (
+        <div className="mb-4 p-3 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 rounded-lg text-sm">
+          Switch your wallet to <strong>Sepolia</strong> to use this app. The contract is deployed on Sepolia; using another network will cause &quot;Token not supported&quot; or revert.
+        </div>
+      )}
+      {isMainnet && (
+        <div className="mb-4 p-3 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 rounded-lg text-sm">
+          You are on Mainnet. If your contract was deployed on Sepolia, switch to <strong>Sepolia</strong> in MetaMask or the lock will revert.
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

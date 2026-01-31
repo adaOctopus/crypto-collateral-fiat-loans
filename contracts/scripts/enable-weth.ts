@@ -28,7 +28,7 @@ async function main() {
 
   const wethAddress = chainId === 11155111 ? WETH_SEPOLIA : chainId === 1 ? WETH_MAINNET : null;
   if (!wethAddress) {
-    throw new Error(`WETH not configured for chainId ${chainId}. Use Sepolia (11155111) or Mainnet (1).`);
+    throw new Error(`WETH not configured for chainId ${chainId}. Run with: --network sepolia or --network mainnet`);
   }
 
   const CollateralLock = await ethers.getContractFactory("CollateralLock");
@@ -40,7 +40,10 @@ async function main() {
   }
 
   console.log("CollateralLock:", collateralLockAddress);
-  console.log("Network:", network.name, "chainId:", chainId);
+  console.log("Network:", network.name, "chainId:", chainId, chainId === 11155111 ? "(Sepolia)" : chainId === 1 ? "(Mainnet)" : "");
+  if (chainId !== 11155111 && chainId !== 1) {
+    throw new Error("Must run on Sepolia or Mainnet. Use: npx hardhat run scripts/enable-weth.ts --network sepolia");
+  }
   console.log("Enabling WETH at", wethAddress, "...");
 
   const tx1 = await collateralLock.setSupportedToken(wethAddress, true);
@@ -57,6 +60,7 @@ async function main() {
   const price = await collateralLock.tokenPrices(wethAddress);
   console.log("\nWETH enabled:", supported, "| price (wei):", price.toString());
   console.log("You can now lock WETH from the app.");
+  console.log("If the app still reverts: 1) Run 'npx hardhat run scripts/verify-weth-enabled.ts --network sepolia' to confirm. 2) In MetaMask, switch to Sepolia so the app and contract are on the same network.");
 }
 
 main()
