@@ -84,7 +84,7 @@ export function BuyLoanAssetsForm() {
     <div className="bg-white dark:bg-dark-card rounded-lg border border-gray-200 dark:border-dark-hover p-4 sm:p-6 max-w-2xl">
       <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Buy Loan Fractions</h2>
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-        0.0000001 ETH per fraction. Holders receive interest share (dummy for now).
+        0.0000001 ETH per fraction. Holders receive interest share (ONLY ON PRODUCTION).
       </p>
       {successMessage && (
         <div className="p-3 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-800 text-green-800 dark:text-green-200 rounded-lg mb-4 text-sm">

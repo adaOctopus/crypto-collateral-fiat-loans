@@ -30,6 +30,39 @@ function getTxUrl(hash: string, chainId: number): string {
 
 type ClientWithRequest = { request: (args: { method: string; params: unknown[] }) => Promise<unknown> };
 
+/** Recursively dig for a .data hex string in error/cause/error chain (max depth to avoid stack) */
+function digForRevertData(obj: unknown, depth: number): string | null {
+  if (depth <= 0 || !obj || typeof obj !== 'object') return null;
+  const o = obj as Record<string, unknown>;
+  if (typeof o.data === 'string' && o.data.startsWith('0x') && o.data.length >= 10) return o.data;
+  for (const key of ['cause', 'error', 'details', 'raw']) {
+    const next = o[key];
+    if (next && typeof next === 'object') {
+      const found = digForRevertData(next, depth - 1);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+/** Safe peek at error shape for debugging (no circular refs) */
+function errorShape(err: unknown): Record<string, unknown> {
+  if (!err || typeof err !== 'object') return { _: String(err) };
+  const o = err as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const k of Object.keys(o)) {
+    try {
+      const v = o[k];
+      if (typeof v === 'string') out[k] = v.length > 200 ? v.slice(0, 200) + '...' : v;
+      else if (v && typeof v === 'object' && !Array.isArray(v)) out[k] = { _keys: Object.keys(v as object), _sample: (v as Record<string, unknown>).data != null ? String((v as Record<string, unknown>).data).slice(0, 66) : undefined };
+      else out[k] = v;
+    } catch {
+      out[k] = '[?]';
+    }
+  }
+  return out;
+}
+
 /** Run eth_call to simulate lockCollateral; on revert, decode RPC error.data and return require() message */
 async function getLockRevertReason(
   publicClient: ClientWithRequest,
@@ -48,21 +81,31 @@ async function getLockRevertReason(
     const o = err && typeof err === 'object' ? (err as Record<string, unknown>) : {};
     let data: string | null = null;
     if (typeof o.data === 'string' && o.data.startsWith('0x')) data = o.data;
-    else if (o.cause && typeof o.cause === 'object') {
-      const c = (o.cause as Record<string, unknown>).data;
-      if (typeof c === 'string' && c.startsWith('0x')) data = c;
+    if (!data && o.cause && typeof o.cause === 'object') {
+      const c = o.cause as Record<string, unknown>;
+      if (typeof c.data === 'string' && c.data.startsWith('0x')) data = c.data;
+      if (!data && c.cause && typeof c.cause === 'object') {
+        const cc = (c.cause as Record<string, unknown>).data;
+        if (typeof cc === 'string' && cc.startsWith('0x')) data = cc;
+      }
     }
-    else if (o.error && typeof o.error === 'object') {
+    if (!data && o.error && typeof o.error === 'object') {
       const e = (o.error as Record<string, unknown>).data;
       if (typeof e === 'string' && e.startsWith('0x')) data = e;
     }
-    if (!data || data.length < 10) return null;
+    if (!data) {
+      data = digForRevertData(o, 5);
+    }
+    if (!data || data.length < 10) {
+      console.warn('[LockCollateral] getLockRevertReason: no revert data in error. Error shape:', errorShape(err));
+      return null;
+    }
     try {
       const decoded = decodeErrorResult({ abi, data: data as `0x${string}` });
       const first = (decoded.args as readonly unknown[])?.[0];
       if (typeof first === 'string') return first;
-    } catch {
-      /* ignore decode failure */
+    } catch (decodeErr) {
+      console.warn('[LockCollateral] getLockRevertReason: decodeErrorResult failed. data (first 66):', data.slice(0, 66), 'decodeErr:', decodeErr);
     }
     return null;
   }
@@ -111,6 +154,45 @@ export function LockCollateralForm({
 
       log('start', { account, tokenAddress, amount, loanAmount, chainId });
 
+      const loanAmountWei = parseEther(loanAmount);
+      const amountWei = parseEther(amount);
+      const minCollateralRatioBps = 12000n;
+
+      // 0. Pre-flight: read contract state so we can show exact error without relying on RPC revert data
+      const supported = await publicClient.readContract({
+        address: collateralLockAddr,
+        abi: COLLATERAL_LOCK_ABI,
+        functionName: 'supportedTokens',
+        args: [tokenAddress as `0x${string}`],
+      });
+      if (!supported) {
+        throw new Error('Token not supported. Deployer must run: npx hardhat run scripts/enable-weth.ts --network sepolia');
+      }
+      const priceWei = (await publicClient.readContract({
+        address: collateralLockAddr,
+        abi: COLLATERAL_LOCK_ABI,
+        functionName: 'tokenPrices',
+        args: [tokenAddress as `0x${string}`],
+      })) as bigint;
+      if (priceWei === 0n) {
+        throw new Error('Token price not set. Deployer must run: npx hardhat run scripts/enable-weth.ts --network sepolia');
+      }
+      const collateralValueWei = (amountWei * priceWei) / BigInt(1e18);
+      const ratioBps = loanAmountWei === 0n ? 0n : (collateralValueWei * 10000n) / loanAmountWei;
+      if (ratioBps < minCollateralRatioBps) {
+        const ratioPct = Number(ratioBps) / 100;
+        throw new Error(`Insufficient collateral: ratio would be ${ratioPct.toFixed(1)}% (minimum 120%). Lower the loan amount or add more collateral.`);
+      }
+      const balance = await publicClient.readContract({
+        address: tokenAddress as `0x${string}`,
+        abi: ERC20_ABI,
+        functionName: 'balanceOf',
+        args: [account],
+      });
+      if (balance < amountWei) {
+        throw new Error(`Insufficient balance: you have ${String(balance)} wei, need ${String(amountWei)}.`);
+      }
+
       // 1. Approve token spending
       setStepIndex(0);
       const approveHash = await walletClient.writeContract({
@@ -128,11 +210,9 @@ export function LockCollateralForm({
 
       // 2. eth_call first to get exact revert reason (require("string")) if lock would fail
       setStepIndex(1);
-      const loanAmountWei = parseEther(loanAmount);
-      const minCollateralRatioBps = 12000n;
       const lockArgs = [
         tokenAddress as `0x${string}`,
-        parseEther(amount),
+        amountWei,
         loanAmountWei,
         minCollateralRatioBps,
       ] as const;
@@ -195,7 +275,9 @@ export function LockCollateralForm({
           COLLATERAL_LOCK_ABI as readonly unknown[]
         );
         log('tx reverted', { revertMsg });
-        throw new Error(revertMsg ?? 'Transaction reverted on-chain.');
+        const fallbackMsg =
+          'Transaction reverted. Your RPC did not return the revert reason. Common causes: (1) Insufficient collateral — try a lower loan amount or more collateral. (2) Token not supported — deployer must run: npx hardhat run scripts/enable-weth.ts --network sepolia. (3) Token price not set. (4) Transfer failed — check allowance and balance. Use an RPC that returns revert data (e.g. Alchemy) to see the exact reason.';
+        throw new Error(revertMsg ?? fallbackMsg);
       }
 
       let positionId: number | null = null;

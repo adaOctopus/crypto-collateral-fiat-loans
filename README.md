@@ -118,6 +118,32 @@ npx hardhat run scripts/enable-weth.ts --network sepolia
 
 This calls `setSupportedToken(WETH, true)` and `setTokenPrice(WETH, ETH_PRICE_USD)` on your deployed CollateralLock. Your deployer key (in `contracts/.env`) must be the contract owner.
 
+### When the lock transaction shows "Fail" and Etherscan / RPC don't return the reason
+
+If the lock tx fails and you only see "Fail" (no revert message), use the **fork debug script** to get the exact revert reason on your machine:
+
+1. In `contracts/.env` set:
+   - `SEPOLIA_RPC_URL` (e.g. your Alchemy Sepolia URL)
+   - `COLLATERAL_LOCK_CONTRACT_ADDRESS`
+   - `USER_ADDRESS` = **your wallet address** (the one that is trying to lock, e.g. your MetaMask address)
+
+2. Run:
+
+```bash
+cd contracts
+USER_ADDRESS=0xYourMetaMaskAddress npx hardhat run scripts/debug-lock-revert.ts --network hardhat
+```
+
+Optional: `DEBUG_AMOUNT=0.0001` and `DEBUG_LOAN_USD=0.00003` to match your test amounts (defaults are 0.0001 and 0.00003).
+
+The script forks Sepolia, impersonates your wallet, and simulates `lockCollateral` with the same args. It prints:
+
+- Whether **VerificationNFT.minter** is set to CollateralLock (if not, deployer must call `VerificationNFT.setMinter(CollateralLock)`).
+- Your **WETH balance** and **allowance** on the fork (so you can see insufficient balance/allowance before the revert).
+- The **exact revert reason** if the call reverts (e.g. "Transfer failed", "Insufficient collateral", "Token price not set").
+
+If you see "Transaction reverted without a reason string" but balance/allowance are sufficient, the revert may be inside the token (e.g. WETH). Ensure you have approved the CollateralLock contract and have enough WETH.
+
 ## Documentation
 
 - [Local Testing Guide](./LOCAL_TESTING_GUIDE.md) - **Complete guide to run and test locally**

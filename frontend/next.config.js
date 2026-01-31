@@ -18,11 +18,15 @@ const nextConfig = {
       '@react-native-async-storage/async-storage': false,
       'pino-pretty': false,
     };
-    // Frontend no longer imports from contracts/ — ignore entire contracts dir (stops dev server from dying)
+    // Only watch frontend dir — ignore parent (contracts, backend, monorepo) so dev server doesn't die
     if (dev) {
       config.watchOptions = {
         ...config.watchOptions,
-        ignored: ['**/node_modules/**', path.join(__dirname, '../contracts/**')],
+        ignored: [
+          '**/node_modules/**',
+          path.join(__dirname, '..'),
+          path.join(__dirname, '../**'),
+        ],
       };
     }
     return config;

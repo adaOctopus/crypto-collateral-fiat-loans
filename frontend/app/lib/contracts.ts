@@ -30,8 +30,17 @@ export const COLLATERAL_LOCK_ABI = CollateralLockArtifact.abi;
 export const VERIFICATION_NFT_ABI = VerificationNFTArtifact.abi;
 export const LOAN_SECURITIZATION_ABI = LoanSecuritizationArtifact.abi;
 
-// ERC20 ABI for token approvals (standard interface, rarely changes)
+// ERC20 ABI for approvals, allowance, balanceOf
 export const ERC20_ABI = [
+  {
+    inputs: [
+      { name: 'owner', type: 'address' },
+    ],
+    name: 'balanceOf',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
   {
     inputs: [
       { name: 'spender', type: 'address' },
@@ -64,12 +73,20 @@ export function getChain(chainId: number | undefined) {
 }
 
 /**
- * Get public client for read operations
+ * Get public client for read operations.
+ * Uses NEXT_PUBLIC_SEPOLIA_RPC_URL for Sepolia when set (e.g. Alchemy) so eth_call returns revert data; otherwise chain default (e.g. Thirdweb) which may return data: "0x".
  */
 export function getPublicClient(chainId: number | undefined) {
+  const chain = getChain(chainId);
+  const url =
+    chain.id === 11155111
+      ? process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL
+      : chain.id === 1
+        ? process.env.NEXT_PUBLIC_MAINNET_RPC_URL
+        : undefined;
   return createPublicClient({
-    chain: getChain(chainId),
-    transport: http(),
+    chain,
+    transport: url ? http(url) : http(),
   });
 }
 

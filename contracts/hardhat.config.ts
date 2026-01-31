@@ -18,6 +18,10 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {
       chainId: 31337,
+      // Fork Sepolia when SEPOLIA_RPC_URL is set (for debug-lock-revert.ts)
+      ...(process.env.SEPOLIA_RPC_URL && {
+        forking: { url: process.env.SEPOLIA_RPC_URL, enabled: true },
+      }),
     },
     localhost: {
       url: "http://127.0.0.1:8545",
