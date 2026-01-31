@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useAccount, useChainId } from 'wagmi';
 import { parseEther } from 'viem';
 import { Button } from './Button';
-import { getWalletClient, getPublicClient, getChain, COLLATERAL_LOCK_ABI, CONTRACT_ADDRESSES, MAX_GAS_LIMIT } from '../lib/contracts';
+import { getWalletClient, getPublicClient, getChain, COLLATERAL_LOCK_ABI, CONTRACT_ADDRESSES, MAX_GAS_LIMIT, WAIT_RECEIPT_OPTIONS } from '../lib/contracts';
 import axios from 'axios';
 import { Position } from '../lib/types';
 
@@ -24,6 +24,7 @@ export function WithdrawForm({
   const [unlockAmount, setUnlockAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const chainId = useChainId();
 
   const activePositions = positions.filter((p) => p.isActive);
@@ -33,6 +34,7 @@ export function WithdrawForm({
     if (selectedPosition === null) return;
 
     setError(null);
+    setSuccessMessage(null);
     setLoading(true);
 
     try {
@@ -69,12 +71,14 @@ export function WithdrawForm({
         gas: MAX_GAS_LIMIT,
       });
 
-      await publicClient.waitForTransactionReceipt({ hash });
+      await publicClient.waitForTransactionReceipt({ hash, ...WAIT_RECEIPT_OPTIONS });
 
+      setSuccessMessage('Collateral withdrawn successfully.');
       onSuccess();
       setUnlockAmount('');
       setSelectedPosition(null);
     } catch (err: any) {
+      setSuccessMessage(null);
       setError(err.message || 'Failed to unlock collateral');
     } finally {
       setLoading(false);
@@ -137,6 +141,11 @@ export function WithdrawForm({
           </div>
         )}
 
+        {successMessage && (
+          <div className="p-3 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-800 text-green-800 dark:text-green-200 rounded-lg">
+            {successMessage}
+          </div>
+        )}
         {error && (
           <div className="p-3 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-800 text-red-800 dark:text-red-200 rounded-lg">
             {error}

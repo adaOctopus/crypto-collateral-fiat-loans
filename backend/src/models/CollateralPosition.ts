@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 import { z } from 'zod';
 
 // Zod schema for validation
+// Use coerce for dates: JSON sends ISO strings, not Date instances
 export const CollateralPositionSchemaZod = z.object({
   userId: z.string(),
   positionId: z.number(),
@@ -12,11 +13,11 @@ export const CollateralPositionSchemaZod = z.object({
   loanAmountUSD: z.string(), // BigNumber as string
   collateralRatio: z.number(),
   nftTokenId: z.number(),
-  lockTimestamp: z.date(),
-  unlockTimestamp: z.date().nullable(),
+  lockTimestamp: z.coerce.date(),
+  unlockTimestamp: z.coerce.date().nullable().optional(),
   isActive: z.boolean(),
-  createdAt: z.date().optional(),
-  updatedAt: z.date().optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
 });
 
 export type CollateralPositionInput = z.infer<typeof CollateralPositionSchemaZod>;

@@ -7,6 +7,7 @@ import positionRoutes from './routes/positionRoutes';
 import paymentRoutes from './routes/paymentRoutes';
 import securitizedLoanRoutes from './routes/securitizedLoanRoutes';
 import { LoanService } from './services/loanService';
+import { requestLogger } from './middleware/requestLogger';
 
 dotenv.config();
 
@@ -16,6 +17,7 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(requestLogger);
 
 // Routes
 app.use('/api/users', userRoutes);

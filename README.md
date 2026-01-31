@@ -109,6 +109,15 @@ To demo the app on Sepolia using ETH as collateral:
 3. Wrap some ETH into WETH (e.g. on [Sepolia Etherscan](https://sepolia.etherscan.io/) → WETH contract → Write → `deposit()`).
 4. In the frontend, select **WETH (Wrapped ETH)** as the collateral token, enter amount and loan amount in USD, then lock collateral.
 
+**If you get "Token not supported" on lock:** The CollateralLock contract only accepts tokens that the owner has enabled. If you deployed before WETH was added to the deploy script, or the enable step failed, run once:
+
+```bash
+cd contracts
+npx hardhat run scripts/enable-weth.ts --network sepolia
+```
+
+This calls `setSupportedToken(WETH, true)` and `setTokenPrice(WETH, ETH_PRICE_USD)` on your deployed CollateralLock. Your deployer key (in `contracts/.env`) must be the contract owner.
+
 ## Documentation
 
 - [Local Testing Guide](./LOCAL_TESTING_GUIDE.md) - **Complete guide to run and test locally**

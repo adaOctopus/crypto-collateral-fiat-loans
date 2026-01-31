@@ -22,6 +22,8 @@ export const createPosition = async (req: Request, res: Response) => {
     const position = new CollateralPosition(validatedData);
     await position.save();
 
+    console.log('[Position] Created', { positionId: position.positionId, userId: position.userId, nftTokenId: position.nftTokenId });
+
     // Generate interest payment schedule
     const schedule = LoanService.generatePaymentSchedule(
       position.positionId,
@@ -39,8 +41,10 @@ export const createPosition = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     if (error.name === 'ZodError') {
+      console.error('[Position] Validation failed:', JSON.stringify(error.errors, null, 2));
       return res.status(400).json({ error: 'Validation error', details: error.errors });
     }
+    console.error('[Position] Create error:', error?.message ?? error);
     res.status(500).json({ error: 'Failed to create position', message: error.message });
   }
 };

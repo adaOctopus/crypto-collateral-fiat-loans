@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useChainId } from 'wagmi';
 import { parseEther } from 'viem';
 import { Button } from './Button';
-import { getWalletClient, getPublicClient, getChain, LOAN_SECURITIZATION_ABI, CONTRACT_ADDRESSES, MAX_GAS_LIMIT } from '../lib/contracts';
+import { getWalletClient, getPublicClient, getChain, LOAN_SECURITIZATION_ABI, CONTRACT_ADDRESSES, MAX_GAS_LIMIT, WAIT_RECEIPT_OPTIONS } from '../lib/contracts';
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
@@ -24,6 +24,7 @@ export function BuyLoanAssetsForm() {
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const chainId = useChainId();
 
   useEffect(() => {
@@ -42,6 +43,7 @@ export function BuyLoanAssetsForm() {
   const buyFraction = async (loanId: number) => {
     if (loanId < 0) return;
     setError(null);
+    setSuccessMessage(null);
     setBuying(loanId);
     try {
       const walletClient = getWalletClient();
@@ -57,8 +59,10 @@ export function BuyLoanAssetsForm() {
         value: PRICE,
         gas: MAX_GAS_LIMIT,
       });
-      await publicClient.waitForTransactionReceipt({ hash });
+      await publicClient.waitForTransactionReceipt({ hash, ...WAIT_RECEIPT_OPTIONS });
+      setSuccessMessage('Fraction purchased successfully.');
     } catch (err: unknown) {
+      setSuccessMessage(null);
       setError((err as Error).message || 'Buy failed');
     } finally {
       setBuying(null);
@@ -82,8 +86,13 @@ export function BuyLoanAssetsForm() {
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
         0.0000001 ETH per fraction. Holders receive interest share (dummy for now).
       </p>
+      {successMessage && (
+        <div className="p-3 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-800 text-green-800 dark:text-green-200 rounded-lg mb-4 text-sm">
+          {successMessage}
+        </div>
+      )}
       {error && (
-        <div className="p-3 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 rounded-lg mb-4 text-sm">
+        <div className="p-3 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-800 text-red-800 dark:text-red-200 rounded-lg mb-4 text-sm">
           {error}
         </div>
       )}

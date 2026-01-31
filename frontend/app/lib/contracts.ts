@@ -11,6 +11,13 @@ import LoanSecuritizationArtifact from './abis/LoanSecuritization.json';
 // Max gas per tx (chain cap often 16_777_216; viem default 21M can revert)
 export const MAX_GAS_LIMIT = 16_000_000n;
 
+// Wait longer for receipt (RPC can lag; avoid "receipt could not be found")
+export const WAIT_RECEIPT_OPTIONS = {
+  timeout: 120_000,
+  retryCount: 30,
+  retryDelay: 2_000,
+} as const;
+
 // Contract addresses - update .env after deployment
 export const CONTRACT_ADDRESSES = {
   COLLATERAL_LOCK: process.env.NEXT_PUBLIC_COLLATERAL_LOCK_ADDRESS || '',
