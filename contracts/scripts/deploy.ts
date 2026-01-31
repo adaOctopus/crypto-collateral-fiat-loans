@@ -41,13 +41,6 @@ async function main() {
     console.log("WETH enabled at", wethAddress, "with price", ethPriceUSD, "USD");
   }
 
-  console.log("\nDeploying MockupEditor...");
-  const MockupEditor = await ethers.getContractFactory("MockupEditor");
-  const mockupEditor = await MockupEditor.deploy();
-  await mockupEditor.waitForDeployment();
-  const mockupEditorAddress = await mockupEditor.getAddress();
-  console.log("MockupEditor deployed to:", mockupEditorAddress);
-
   // Allow CollateralLock to mint VerificationNFT when users lock collateral
   console.log("\nSetting VerificationNFT minter to CollateralLock...");
   await verificationNFT.setMinter(collateralLockAddress);
@@ -67,12 +60,10 @@ async function main() {
   console.log("VerificationNFT:", verificationNFTAddress);
   console.log("CollateralLock:", collateralLockAddress);
   console.log("LoanSecuritization:", loanSecuritizationAddress);
-  console.log("MockupEditor:", mockupEditorAddress);
   console.log("\nUpdate your .env files with these addresses:");
   console.log(`VERIFICATION_NFT_CONTRACT_ADDRESS=${verificationNFTAddress}`);
   console.log(`COLLATERAL_LOCK_CONTRACT_ADDRESS=${collateralLockAddress}`);
   console.log(`LOAN_SECURITIZATION_CONTRACT_ADDRESS=${loanSecuritizationAddress}`);
-  console.log(`MOCKUP_EDITOR_CONTRACT_ADDRESS=${mockupEditorAddress}`);
 }
 
 main()

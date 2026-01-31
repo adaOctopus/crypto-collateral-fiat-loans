@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { InterestPayment } from '../models';
 import { LoanService } from '../services/loanService';
+import { API_LIMITS } from '../config/constants';
 
 /**
  * Record an interest payment (fake money). If amount is provided, it must match the next unpaid payment for that position.
@@ -61,7 +62,7 @@ export const getPaymentHistory = async (req: Request, res: Response) => {
       userId: walletAddress.toLowerCase(),
     })
       .sort({ dueDate: -1 })
-      .limit(50);
+      .limit(API_LIMITS.MAX_LIST_PAYMENTS);
 
     res.json({ payments });
   } catch (error: any) {

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { SecuritizedLoan, SecuritizedLoanSchemaZod } from '../models';
+import { API_LIMITS } from '../config/constants';
 
 export const createSecuritizedLoan = async (req: Request, res: Response) => {
   try {
@@ -25,7 +26,9 @@ export const createSecuritizedLoan = async (req: Request, res: Response) => {
 
 export const listSecuritizedLoans = async (req: Request, res: Response) => {
   try {
-    const loans = await SecuritizedLoan.find().sort({ createdAt: -1 }).limit(100);
+    const loans = await SecuritizedLoan.find()
+      .sort({ createdAt: -1 })
+      .limit(API_LIMITS.MAX_LIST_LOANS);
     res.json({ loans });
   } catch (error: unknown) {
     res.status(500).json({ error: 'Failed to list loans', message: (error as Error).message });

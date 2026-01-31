@@ -40,4 +40,15 @@ export const LOAN_RULES = {
   },
 } as const;
 
+/**
+ * API limits for backpressure and memory safety (no unbounded lists or bodies).
+ */
+export const API_LIMITS = {
+  MAX_LIST_POSITIONS: 100,
+  MAX_LIST_PAYMENTS: 100,
+  MAX_LIST_LOANS: 100,
+  MAX_PAYMENTS_PER_POSITION: 100,
+  MAX_BODY_SIZE_KB: 100,
+} as const;
+
 export type LoanRules = typeof LOAN_RULES;

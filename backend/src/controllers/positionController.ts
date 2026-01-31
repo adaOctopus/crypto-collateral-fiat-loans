@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { CollateralPosition, InterestPayment } from '../models';
 import { LoanService } from '../services/loanService';
 import { CollateralPositionSchemaZod } from '../models';
+import { API_LIMITS } from '../config/constants';
 
 /**
  * Create a new collateral position (called after on-chain lock)
@@ -58,14 +59,16 @@ export const getUserPositions = async (req: Request, res: Response) => {
 
     const positions = await CollateralPosition.find({
       userId: walletAddress.toLowerCase(),
-    }).sort({ createdAt: -1 });
+    })
+      .sort({ createdAt: -1 })
+      .limit(API_LIMITS.MAX_LIST_POSITIONS);
 
     // Get payment info for each position
     const positionsWithPayments = await Promise.all(
       positions.map(async (position: any) => {
         const payments = await InterestPayment.find({
           positionId: position.positionId,
-        });
+        }).limit(API_LIMITS.MAX_PAYMENTS_PER_POSITION);
 
         const paidCount = payments.filter((p: any) => p.isPaid).length;
         const unpaidCount = payments.filter((p: any) => !p.isPaid).length;
@@ -106,7 +109,9 @@ export const getPositionDetails = async (req: Request, res: Response) => {
 
     const payments = await InterestPayment.find({
       positionId: position.positionId,
-    }).sort({ dueDate: 1 });
+    })
+      .sort({ dueDate: 1 })
+      .limit(API_LIMITS.MAX_PAYMENTS_PER_POSITION);
 
     res.json({
       position,
