@@ -107,21 +107,24 @@ export function WithdrawForm({
             Select Position
           </label>
           <select
-            value={selectedPosition || ''}
-            onChange={(e) => setSelectedPosition(parseInt(e.target.value))}
+            value={selectedPosition === null ? '' : String(selectedPosition)}
+            onChange={(e) => {
+              const v = e.target.value;
+              setSelectedPosition(v === '' ? null : parseInt(v, 10));
+            }}
             required
             className="w-full px-4 py-2 border border-gray-300 dark:border-dark-hover rounded-lg bg-white dark:bg-dark-bg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
           >
             <option value="">Choose a position...</option>
             {activePositions.map((position) => (
-              <option key={position.positionId} value={position.positionId}>
+              <option key={position.positionId} value={String(position.positionId)}>
                 Position #{position.positionId} - {position.tokenSymbol} ({parseFloat(position.amount) / 1e18})
               </option>
             ))}
           </select>
         </div>
 
-        {selectedPosition && (
+        {selectedPosition != null && (
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Amount to Unlock
@@ -152,7 +155,7 @@ export function WithdrawForm({
           </div>
         )}
 
-        <Button type="submit" disabled={loading || !selectedPosition} className="w-full">
+        <Button type="submit" disabled={loading || selectedPosition === null} className="w-full">
           {loading ? 'Processing...' : 'Withdraw Collateral'}
         </Button>
       </form>
