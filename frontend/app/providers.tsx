@@ -1,31 +1,14 @@
 'use client';
 
+// Use only injected (MetaMask) to avoid pulling in WalletConnect/MetaMask SDK (heavy, causes server crash)
 import { WagmiProvider, createConfig, http } from 'wagmi';
 import { mainnet, sepolia } from 'wagmi/chains';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { injected, walletConnect, coinbaseWallet } from 'wagmi/connectors';
+import { injected } from 'wagmi/connectors';
 import { useState, useEffect } from 'react';
-import { ThemeProvider } from './components/ThemeProvider';
 
-const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || '';
-
-// Create connectors with better error handling
 const connectors = [
-  injected({ 
-    shimDisconnect: true,
-  }),
-  ...(projectId
-    ? [
-        walletConnect({
-          projectId,
-          showQrModal: false, // We'll handle the modal ourselves
-        }),
-        coinbaseWallet({
-          appName: 'CollateralFusion',
-          appLogoUrl: 'https://collateralfusion.com/logo.png',
-        }),
-      ]
-    : []),
+  injected({ shimDisconnect: true }),
 ];
 
 const config = createConfig({
@@ -83,7 +66,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider>{children}</ThemeProvider>
+        {children}
       </QueryClientProvider>
     </WagmiProvider>
   );

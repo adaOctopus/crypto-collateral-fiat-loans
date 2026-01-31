@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useChainId } from 'wagmi';
 import { parseEther } from 'viem';
 import { Button } from './Button';
-import { getWalletClient, getPublicClient, getChain, LOAN_SECURITIZATION_ABI, CONTRACT_ADDRESSES } from '../lib/contracts';
+import { getWalletClient, getPublicClient, getChain, LOAN_SECURITIZATION_ABI, CONTRACT_ADDRESSES, MAX_GAS_LIMIT } from '../lib/contracts';
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
@@ -40,6 +40,7 @@ export function BuyLoanAssetsForm() {
   }, []);
 
   const buyFraction = async (loanId: number) => {
+    if (loanId < 0) return;
     setError(null);
     setBuying(loanId);
     try {
@@ -54,6 +55,7 @@ export function BuyLoanAssetsForm() {
         account,
         chain: getChain(chainId),
         value: PRICE,
+        gas: MAX_GAS_LIMIT,
       });
       await publicClient.waitForTransactionReceipt({ hash });
     } catch (err: unknown) {

@@ -3,10 +3,13 @@ import { createPublicClient, http } from 'viem';
 import { sepolia, mainnet } from 'viem/chains';
 import { createWalletClient, custom } from 'viem';
 
-// Import ABIs from Hardhat artifacts - always use latest after compile
-import CollateralLockArtifact from '@contracts/artifacts/contracts/CollateralLock.sol/CollateralLock.json';
-import VerificationNFTArtifact from '@contracts/artifacts/contracts/VerificationNFT.sol/VerificationNFT.json';
-import LoanSecuritizationArtifact from '@contracts/artifacts/contracts/LoanSecuritization.sol/LoanSecuritization.json';
+// ABIs live in frontend (no @contracts import = faster dev, no server crashes)
+import CollateralLockArtifact from './abis/CollateralLock.json';
+import VerificationNFTArtifact from './abis/VerificationNFT.json';
+import LoanSecuritizationArtifact from './abis/LoanSecuritization.json';
+
+// Max gas per tx (chain cap often 16_777_216; viem default 21M can revert)
+export const MAX_GAS_LIMIT = 16_000_000n;
 
 // Contract addresses - update .env after deployment
 export const CONTRACT_ADDRESSES = {
@@ -45,16 +48,18 @@ export const ERC20_ABI = [
 ] as const;
 
 /**
- * Get viem chain for a given chain ID
+ * Get viem chain for a given chain ID.
+ * Wagmi useChainId() can return -1 when disconnected; never pass that to viem.
  */
-export function getChain(chainId: number) {
+export function getChain(chainId: number | undefined) {
+  if (typeof chainId !== 'number' || chainId < 0) return sepolia;
   return chainId === 1 ? mainnet : sepolia;
 }
 
 /**
  * Get public client for read operations
  */
-export function getPublicClient(chainId: number) {
+export function getPublicClient(chainId: number | undefined) {
   return createPublicClient({
     chain: getChain(chainId),
     transport: http(),

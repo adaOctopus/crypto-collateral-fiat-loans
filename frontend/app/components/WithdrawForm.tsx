@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useAccount, useChainId } from 'wagmi';
 import { parseEther } from 'viem';
 import { Button } from './Button';
-import { getWalletClient, getPublicClient, getChain, COLLATERAL_LOCK_ABI, CONTRACT_ADDRESSES } from '../lib/contracts';
+import { getWalletClient, getPublicClient, getChain, COLLATERAL_LOCK_ABI, CONTRACT_ADDRESSES, MAX_GAS_LIMIT } from '../lib/contracts';
 import axios from 'axios';
 import { Position } from '../lib/types';
 
@@ -56,6 +56,9 @@ export function WithdrawForm({
       const publicClient = getPublicClient(chainId);
       const [account] = await walletClient.getAddresses();
 
+      if (selectedPosition == null || selectedPosition < 0) {
+        throw new Error('Please select a position.');
+      }
       const hash = await walletClient.writeContract({
         address: CONTRACT_ADDRESSES.COLLATERAL_LOCK as `0x${string}`,
         abi: COLLATERAL_LOCK_ABI,
@@ -63,6 +66,7 @@ export function WithdrawForm({
         args: [BigInt(selectedPosition), parseEther(unlockAmount)],
         account,
         chain: getChain(chainId),
+        gas: MAX_GAS_LIMIT,
       });
 
       await publicClient.waitForTransactionReceipt({ hash });

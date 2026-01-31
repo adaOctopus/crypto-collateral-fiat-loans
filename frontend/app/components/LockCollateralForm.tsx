@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useChainId } from 'wagmi';
 import { parseEther } from 'viem';
 import { Button } from './Button';
-import { getWalletClient, getPublicClient, getChain, COLLATERAL_LOCK_ABI, LOAN_SECURITIZATION_ABI, ERC20_ABI, CONTRACT_ADDRESSES } from '../lib/contracts';
+import { getWalletClient, getPublicClient, getChain, COLLATERAL_LOCK_ABI, LOAN_SECURITIZATION_ABI, ERC20_ABI, CONTRACT_ADDRESSES, MAX_GAS_LIMIT } from '../lib/contracts';
 import { getTokenAddress, getTokenSymbol, PRESET_TOKENS } from '../lib/supportedTokens';
 import axios from 'axios';
 
@@ -53,14 +53,15 @@ export function LockCollateralForm({
         args: [CONTRACT_ADDRESSES.COLLATERAL_LOCK as `0x${string}`, parseEther(amount)],
         account,
         chain: getChain(chainId),
+        gas: MAX_GAS_LIMIT,
       });
 
       await publicClient.waitForTransactionReceipt({ hash: approveHash });
 
-      // 2. Lock collateral
-      const minCollateralRatio = parseEther('12000'); // 120%
+      // 2. Lock collateral (minCollateralRatio = 12000 = 120% in basis points, not wei)
       const loanAmountWei = parseEther(loanAmount);
-      
+      const minCollateralRatioBps = 12000n;
+
       const lockHash = await walletClient.writeContract({
         address: CONTRACT_ADDRESSES.COLLATERAL_LOCK as `0x${string}`,
         abi: COLLATERAL_LOCK_ABI,
@@ -69,10 +70,11 @@ export function LockCollateralForm({
           tokenAddress as `0x${string}`,
           parseEther(amount),
           loanAmountWei,
-          minCollateralRatio,
+          minCollateralRatioBps,
         ],
         account,
         chain: getChain(chainId),
+        gas: MAX_GAS_LIMIT,
       });
 
       await publicClient.waitForTransactionReceipt({ hash: lockHash });
@@ -86,7 +88,13 @@ export function LockCollateralForm({
         args: [account],
       }) as readonly unknown[];
 
+      if (!positions?.length) {
+        throw new Error('No positions found after lock. Please refresh and try again.');
+      }
       const positionId = positions.length - 1;
+      if (positionId < 0) {
+        throw new Error('Invalid position. Please try again.');
+      }
 
       // 4. Get position to read nftTokenId
       const position = await publicClient.readContract({
@@ -107,6 +115,7 @@ export function LockCollateralForm({
           args: [BigInt(nftTokenId)],
           account,
           chain: getChain(chainId),
+          gas: MAX_GAS_LIMIT,
         });
         await publicClient.waitForTransactionReceipt({ hash: securitizeHash });
         // In LoanSecuritization, loanId === verificationTokenId (nftTokenId); no separate counter
