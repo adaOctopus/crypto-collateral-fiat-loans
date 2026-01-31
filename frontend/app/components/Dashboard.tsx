@@ -7,6 +7,7 @@ import { Navbar } from './Navbar';
 import { PositionsList } from './PositionsList';
 import { LockCollateralForm } from './LockCollateralForm';
 import { BankAccountForm } from './BankAccountForm';
+import { PayLoanForm } from './PayLoanForm';
 import { WithdrawForm } from './WithdrawForm';
 import { BuyLoanAssetsForm } from './BuyLoanAssetsForm';
 import { useTheme } from './ThemeProvider';
@@ -34,7 +35,7 @@ export function Dashboard({ userAddress }: { userAddress: string }) {
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
   const [backendError, setBackendError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'positions' | 'lock' | 'withdraw' | 'bank' | 'buy'>('positions');
+  const [activeTab, setActiveTab] = useState<'positions' | 'lock' | 'withdraw' | 'payloan' | 'buy' | 'bank'>('positions');
   const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
@@ -92,6 +93,7 @@ export function Dashboard({ userAddress }: { userAddress: string }) {
             { id: 'positions', label: 'My Positions' },
             { id: 'lock', label: 'Lock Collateral' },
             { id: 'withdraw', label: 'Withdraw' },
+            { id: 'payloan', label: 'Pay Loan' },
             { id: 'buy', label: 'Buy Loan Assets' },
             { id: 'bank', label: 'Bank Account' },
           ].map((tab) => (
@@ -127,6 +129,14 @@ export function Dashboard({ userAddress }: { userAddress: string }) {
 
         {activeTab === 'withdraw' && (
           <WithdrawForm
+            positions={positions}
+            userAddress={userAddress}
+            onSuccess={fetchPositions}
+          />
+        )}
+
+        {activeTab === 'payloan' && (
+          <PayLoanForm
             positions={positions}
             userAddress={userAddress}
             onSuccess={fetchPositions}

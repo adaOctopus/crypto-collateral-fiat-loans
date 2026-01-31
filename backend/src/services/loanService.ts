@@ -83,12 +83,35 @@ export class LoanService {
   }
 
   /**
-   * Record interest payment and update credit score
+   * Get next unpaid payment for a position (for Pay Loan form)
+   */
+  static async getNextUnpaidPayment(
+    userId: string,
+    positionId: number
+  ): Promise<{ amount: number; amountRaw: string; dueDate: Date } | null> {
+    const payment = await InterestPayment.findOne({
+      userId,
+      positionId,
+      isPaid: false,
+    }).sort({ dueDate: 1 });
+
+    if (!payment) return null;
+    const amountHuman = Number(payment.amount) / 1e18;
+    return {
+      amount: amountHuman,
+      amountRaw: payment.amount,
+      dueDate: payment.dueDate,
+    };
+  }
+
+  /**
+   * Record interest payment and update credit score.
+   * If amount is provided, it must match the next unpaid payment (within tolerance).
    */
   static async recordPayment(
     userId: string,
     positionId: number,
-    paidDate: Date = new Date()
+    paidDateOrAmount?: Date | number
   ): Promise<IInterestPayment> {
     const payment = await InterestPayment.findOne({
       userId,
@@ -97,7 +120,17 @@ export class LoanService {
     }).sort({ dueDate: 1 }); // Get earliest unpaid payment
 
     if (!payment) {
-      throw new Error('No unpaid payment found');
+      throw new Error('No unpaid payment found for this position');
+    }
+
+    const paidDate = typeof paidDateOrAmount === 'number' ? new Date() : (paidDateOrAmount ?? new Date());
+
+    if (typeof paidDateOrAmount === 'number') {
+      const amountHuman = Number(payment.amount) / 1e18;
+      const tolerance = 1e-10;
+      if (Math.abs(amountHuman - paidDateOrAmount) > tolerance) {
+        throw new Error(`Invalid amount; next payment due is $${amountHuman.toFixed(6)}`);
+      }
     }
 
     const now = new Date();
