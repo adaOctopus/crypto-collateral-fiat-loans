@@ -67,7 +67,7 @@ async function main() {
   await tx1.wait();
   console.log("setSupportedToken(WETH, true) — done");
 
-  const ethPriceUSD = process.env.ETH_PRICE_USD || "2000";
+  const ethPriceUSD = process.env.ETH_PRICE_USD || "20";
   const ethPriceWei = ethers.parseEther(ethPriceUSD);
   const tx2 = await collateralLock.setTokenPrice(wethAddress, ethPriceWei);
   await tx2.wait();
