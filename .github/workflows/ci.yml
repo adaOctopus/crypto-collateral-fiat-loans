@@ -1,0 +1,84 @@
+# CI pipeline for Collateral Crypto
+# Runs TypeScript checks, backend tests, and Solidity contract tests on every push/PR
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────
+  # TypeScript & Backend
+  # ─────────────────────────────────────────────────────────────────────────
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install backend dependencies
+        run: cd backend && npm ci
+
+      - name: TypeScript check (backend)
+        run: cd backend && npx tsc --noEmit
+
+      - name: Run backend tests
+        run: cd backend && npm test
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Frontend
+  # ─────────────────────────────────────────────────────────────────────────
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install frontend dependencies
+        run: cd frontend && npm ci
+
+      - name: TypeScript check (frontend)
+        run: cd frontend && npx tsc --noEmit
+
+      - name: ESLint
+        run: cd frontend && npm run lint
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Solidity Contracts
+  # ─────────────────────────────────────────────────────────────────────────
+  contracts:
+    name: Smart Contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install contract dependencies
+        run: cd contracts && npm ci
+
+      - name: Compile contracts
+        run: cd contracts && npm run compile
+
+      - name: Run contract tests (Hardhat)
+        run: cd contracts && npm test

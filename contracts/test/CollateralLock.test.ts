@@ -38,6 +38,9 @@ describe("CollateralLock", function () {
     // Setup: Add token as supported and set price
     await collateralLock.setSupportedToken(await mockERC20.getAddress(), true);
     await collateralLock.setTokenPrice(await mockERC20.getAddress(), ethers.parseEther("2000")); // $2000 per token
+
+    // Give user tokens (MockERC20 mints to deployer, so transfer to user)
+    await mockERC20.transfer(user.address, ethers.parseEther("1000"));
   });
 
   describe("Deployment", function () {
@@ -67,13 +70,13 @@ describe("CollateralLock", function () {
       const amount = ethers.parseEther("10");
       const loanAmountUSD = ethers.parseEther("15000"); // $15,000 loan
       
-      // Approve and lock
-      await mockERC20.approve(await collateralLock.getAddress(), amount);
+      // Approve and lock (user must approve - they hold the tokens)
+      await mockERC20.connect(user).approve(await collateralLock.getAddress(), amount);
       await collateralLock.connect(user).lockCollateral(
         await mockERC20.getAddress(),
         amount,
         loanAmountUSD,
-        ethers.parseEther("12000") // 120% minimum
+        12000 // 120% minimum (basis points)
       );
 
       // Check position was created
@@ -90,14 +93,14 @@ describe("CollateralLock", function () {
       const amount = ethers.parseEther("1"); // Too little
       const loanAmountUSD = ethers.parseEther("15000");
       
-      await mockERC20.approve(await collateralLock.getAddress(), amount);
+      await mockERC20.connect(user).approve(await collateralLock.getAddress(), amount);
       
       await expect(
         collateralLock.connect(user).lockCollateral(
           await mockERC20.getAddress(),
           amount,
           loanAmountUSD,
-          ethers.parseEther("12000")
+          12000 // 120% basis points
         )
       ).to.be.revertedWith("Insufficient collateral");
     });
@@ -111,7 +114,7 @@ describe("CollateralLock", function () {
           await unsupportedToken.getAddress(),
           ethers.parseEther("10"),
           ethers.parseEther("10000"),
-          ethers.parseEther("12000")
+          12000
         )
       ).to.be.revertedWith("Token not supported");
     });
@@ -123,24 +126,25 @@ describe("CollateralLock", function () {
       const amount = ethers.parseEther("10");
       const loanAmountUSD = ethers.parseEther("15000");
       
-      await mockERC20.approve(await collateralLock.getAddress(), amount);
+      await mockERC20.connect(user).approve(await collateralLock.getAddress(), amount);
       await collateralLock.connect(user).lockCollateral(
         await mockERC20.getAddress(),
         amount,
         loanAmountUSD,
-        ethers.parseEther("12000")
+        12000
       );
     });
 
     it("Should unlock collateral proportionally", async function () {
       const positions = await collateralLock.getUserPositions(user.address);
       const positionId = 0; // First position
-      const unlockAmount = ethers.parseEther("2");
+      // 10 tokens @ $2000 = $20k, loan $15k. Min 120% ratio needs $18k collateral = 9 tokens. Max unlock = 1 token.
+      const unlockAmount = ethers.parseEther("1");
       
       await collateralLock.connect(user).unlockCollateral(positionId, unlockAmount);
       
       const position = await collateralLock.getPosition(positionId);
-      expect(position.amount).to.equal(ethers.parseEther("8"));
+      expect(position.amount).to.equal(ethers.parseEther("9"));
     });
 
     it("Should reject unlock that breaches minimum ratio", async function () {
@@ -159,12 +163,12 @@ describe("CollateralLock", function () {
       const amount = ethers.parseEther("10");
       const loanAmountUSD = ethers.parseEther("15000");
       
-      await mockERC20.approve(await collateralLock.getAddress(), amount);
+      await mockERC20.connect(user).approve(await collateralLock.getAddress(), amount);
       await collateralLock.connect(user).lockCollateral(
         await mockERC20.getAddress(),
         amount,
         loanAmountUSD,
-        ethers.parseEther("12000")
+        12000
       );
 
       // Simulate price drop by updating token price

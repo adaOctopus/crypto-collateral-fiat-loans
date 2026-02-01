@@ -144,6 +144,22 @@ The script forks Sepolia, impersonates your wallet, and simulates `lockCollatera
 
 If you see "Transaction reverted without a reason string" but balance/allowance are sufficient, the revert may be inside the token (e.g. WETH). Ensure you have approved the CollateralLock contract and have enough WETH.
 
+## CI/CD
+
+GitHub Actions runs on every push and pull request to `main` and `develop`:
+
+| Job | Checks |
+|-----|--------|
+| **Backend** | TypeScript (`tsc --noEmit`), unit tests (Jest) |
+| **Frontend** | TypeScript, ESLint |
+| **Contracts** | Solidity compile (Hardhat), contract tests (Hardhat) |
+
+To run CI checks locally:
+
+```bash
+npm run ci
+```
+
 ## Documentation
 
 - [Local Testing Guide](./LOCAL_TESTING_GUIDE.md) - **Complete guide to run and test locally**

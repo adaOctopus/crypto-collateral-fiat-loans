@@ -8,6 +8,8 @@
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
     "build:contracts": "cd contracts && npm run compile",
-    "test:contracts": "cd contracts && npm test"
+    "test:contracts": "cd contracts && npm test",
+    "test:backend": "cd backend && npm test",
+    "ci": "npm run test:backend && npm run test:contracts"
   }
 }

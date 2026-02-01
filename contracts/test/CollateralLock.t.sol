@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import "../contracts/CollateralLock.sol";
 import "../contracts/VerificationNFT.sol";
-import "./MockERC20.sol";
+import "../contracts/mocks/MockERC20.sol";
 
 contract CollateralLockTest is Test {
     CollateralLock public collateralLock;
