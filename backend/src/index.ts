@@ -7,6 +7,7 @@ import userRoutes from './routes/userRoutes';
 import positionRoutes from './routes/positionRoutes';
 import paymentRoutes from './routes/paymentRoutes';
 import securitizedLoanRoutes from './routes/securitizedLoanRoutes';
+import tokenPriceRoutes from './routes/tokenPriceRoutes';
 import { LoanService } from './services/loanService';
 import { requestLogger } from './middleware/requestLogger';
 import { API_LIMITS } from './config/constants';
@@ -37,6 +38,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/positions', positionRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/securitized-loans', securitizedLoanRoutes);
+app.use('/api/token-price', tokenPriceRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

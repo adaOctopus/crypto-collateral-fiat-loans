@@ -20,7 +20,7 @@ export const createPosition = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Position already exists' });
     }
 
-    const position = new CollateralPosition(validatedData);
+    const position = new CollateralPosition({ ...validatedData, credit_score: 50 });
     await position.save();
 
     console.log('[Position] Created', { positionId: position.positionId, userId: position.userId, nftTokenId: position.nftTokenId });

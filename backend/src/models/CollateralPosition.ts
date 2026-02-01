@@ -13,6 +13,7 @@ export const CollateralPositionSchemaZod = z.object({
   loanAmountUSD: z.string(), // BigNumber as string
   collateralRatio: z.number(),
   nftTokenId: z.number(),
+  credit_score: z.number().min(0).max(100).optional(),
   lockTimestamp: z.coerce.date(),
   unlockTimestamp: z.coerce.date().nullable().optional(),
   isActive: z.boolean(),
@@ -33,6 +34,7 @@ interface ICollateralPosition extends Document {
   loanAmountUSD: string;
   collateralRatio: number;
   nftTokenId: number;
+  credit_score?: number;
   lockTimestamp: Date;
   unlockTimestamp: Date | null;
   isActive: boolean;
@@ -82,6 +84,12 @@ const CollateralPositionSchema = new Schema<ICollateralPosition>(
     nftTokenId: {
       type: Number,
       required: true,
+    },
+    credit_score: {
+      type: Number,
+      default: 50,
+      min: 0,
+      max: 100,
     },
     lockTimestamp: {
       type: Date,

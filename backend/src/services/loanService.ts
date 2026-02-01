@@ -1,7 +1,7 @@
 import { InterestPayment, IInterestPayment } from '../models/InterestPayment';
 import { CollateralPosition } from '../models/CollateralPosition';
 import { LOAN_RULES } from '../config/constants';
-import { ethers } from 'ethers';
+import { getContractService } from './contractService';
 
 /**
  * Service for managing loan calculations and interest payments
@@ -181,9 +181,22 @@ export class LoanService {
     // Clamp between 0 and 100
     const newScore = Math.max(0, Math.min(100, baseScore));
 
-    // In production, call contract to update NFT credit score
-    // For now, we'll store it in the database
-    // await contractService.updateCreditScore(position.nftTokenId, newScore, isOnTime);
+    // Store credit score in MongoDB
+    await CollateralPosition.updateOne(
+      { positionId },
+      { $set: { credit_score: newScore } }
+    );
+
+    // Update on-chain (only if CONTRACT_OWNER_PRIVATE_KEY is set)
+    try {
+      const contractService = getContractService();
+      const txHash = await contractService.updateCreditScore(position.nftTokenId, newScore, isOnTime);
+      if (txHash) {
+        console.log('[CreditScore] Updated on-chain', { positionId, nftTokenId: position.nftTokenId, newScore, txHash });
+      }
+    } catch (err: any) {
+      console.warn('[CreditScore] On-chain update skipped or failed (DB updated)', err?.message ?? err);
+    }
 
     return newScore;
   }
