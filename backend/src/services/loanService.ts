@@ -187,15 +187,19 @@ export class LoanService {
       { $set: { credit_score: newScore } }
     );
 
-    // Update on-chain (only if CONTRACT_OWNER_PRIVATE_KEY is set)
+    // Update on-chain (only if CONTRACT_OWNER_PRIVATE_KEY is set in backend .env)
+    const hasOwnerKey = !!process.env.CONTRACT_OWNER_PRIVATE_KEY;
+    console.log('[CreditScore] DB updated to', newScore, '| CONTRACT_OWNER_PRIVATE_KEY set:', hasOwnerKey);
     try {
       const contractService = getContractService();
       const txHash = await contractService.updateCreditScore(position.nftTokenId, newScore, isOnTime);
       if (txHash) {
         console.log('[CreditScore] Updated on-chain', { positionId, nftTokenId: position.nftTokenId, newScore, txHash });
+      } else {
+        console.warn('[CreditScore] On-chain update skipped: no signer (add CONTRACT_OWNER_PRIVATE_KEY to backend/.env and restart backend)');
       }
     } catch (err: any) {
-      console.warn('[CreditScore] On-chain update skipped or failed (DB updated)', err?.message ?? err);
+      console.warn('[CreditScore] On-chain update failed (DB updated)', err?.message ?? err);
     }
 
     return newScore;

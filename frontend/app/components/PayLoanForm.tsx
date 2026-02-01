@@ -8,6 +8,32 @@ import { Position } from '../lib/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
+function Spinner({ className }: { className?: string }) {
+  return (
+    <svg
+      className={`animate-spin ${className ?? ''}`}
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      aria-hidden
+    >
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+      />
+    </svg>
+  );
+}
+
 interface NextUnpaid {
   amount: number;
   amountRaw: string;
@@ -173,13 +199,27 @@ export function PayLoanForm({
           </div>
         )}
 
-        <Button
-          type="submit"
-          disabled={loading || selectedPosition === null || (selectedPosition != null && nextUnpaid === null)}
-          className="w-full"
-        >
-          {loading ? 'Processing...' : 'Send Payment'}
-        </Button>
+        <div className="space-y-2">
+          <Button
+            type="submit"
+            disabled={loading || selectedPosition === null || (selectedPosition != null && nextUnpaid === null)}
+            className="w-full flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <>
+                <Spinner className="w-5 h-5" />
+                <span>Processing...</span>
+              </>
+            ) : (
+              'Send Payment'
+            )}
+          </Button>
+          {loading && (
+            <p className="text-sm text-center text-gray-500 dark:text-gray-400">
+              Recording payment and updating credit score on-chain…
+            </p>
+          )}
+        </div>
       </form>
     </div>
   );
