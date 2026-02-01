@@ -14,6 +14,23 @@ dotenv.config();
 const WETH_SEPOLIA = "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14";
 const WETH_MAINNET = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 
+async function getPrivateKeyFromAddress(address: string) {
+  const hre = await import("hardhat");
+  const { ethers } = hre as any;
+  const [deployer] = await ethers.getSigners();
+  console.log("deployer", deployer);
+  const network = await ethers.provider.getNetwork();
+  const chainId = Number(network.chainId);
+  const CollateralLock = await ethers.getContractFactory("CollateralLock");
+  const collateralLockAddress = '0xbAEB057Ec373B1E30f7f6d5C5Cf7C09467d95c6d';
+  if (!collateralLockAddress) {
+    throw new Error("Missing COLLATERAL_LOCK_CONTRACT_ADDRESS in .env");
+  }
+  const collateralLock = CollateralLock.attach(collateralLockAddress);
+  console.log("collateralLock", collateralLock);
+  return collateralLock;
+}
+
 async function main() {
   const hre = await import("hardhat");
   const { ethers } = hre as any;
@@ -63,9 +80,15 @@ async function main() {
   console.log("If the app still reverts: 1) Run 'npx hardhat run scripts/verify-weth-enabled.ts --network sepolia' to confirm. 2) In MetaMask, switch to Sepolia so the app and contract are on the same network.");
 }
 
-main()
+getPrivateKeyFromAddress('0x91BcE66b1fA371F1dbFC3DB1e0257BAFfD1292a8')
   .then(() => process.exit(0))
   .catch((err) => {
     console.error(err);
     process.exit(1);
   });
+
+// main().then(() => process.exit(0))
+//   .catch((err) => {
+//     console.error(err);
+//     process.exit(1);
+//   });
