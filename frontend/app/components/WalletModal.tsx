@@ -108,7 +108,7 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
             </p>
             <div className="mb-4 p-3 bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-800 rounded-lg">
               <p className="text-xs text-blue-800 dark:text-blue-200">
-                💡 Make sure MetaMask is <strong>unlocked</strong> and you're on the <strong>Sepolia</strong> or <strong>Mainnet</strong> network.
+                💡 Make sure MetaMask is <strong>unlocked</strong> and you&apos;re on the <strong>Sepolia</strong> or <strong>Mainnet</strong> network.
               </p>
             </div>
           </>

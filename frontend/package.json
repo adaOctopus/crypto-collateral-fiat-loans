@@ -8,7 +8,7 @@
     "dev:webpack": "NODE_OPTIONS=--max-old-space-size=4096 next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "copy-abis": "node scripts/copy-abis.js"
   },
   "dependencies": {
