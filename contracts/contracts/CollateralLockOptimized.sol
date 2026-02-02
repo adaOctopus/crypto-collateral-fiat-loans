@@ -117,6 +117,17 @@ contract CollateralLockOptimized is Ownable, ReentrancyGuard {
         tokenPrices[token] = price;
         emit TokenPriceUpdated(token, price);
     }
+
+    // Dummy for foundry gas test
+
+    function lockCollateralForGas(
+    address token,
+    uint256 amount,
+    uint256 loanUSD,
+    uint256 minRatio
+        ) external {
+            lockCollateral(token, amount, loanUSD, minRatio); // internal call
+        }
     
     /**
      * @dev Lock collateral and receive loan
