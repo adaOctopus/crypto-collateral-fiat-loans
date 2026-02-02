@@ -127,7 +127,7 @@ contract CollateralLockOptimized is Ownable, ReentrancyGuard {
         uint256 amount,
         uint256 loanAmountUSD,
         uint256 minCollateralRatio
-    ) external nonReentrant onlySupportedToken(tokenAddress) returns (uint256 positionId) {
+    ) public nonReentrant onlySupportedToken(tokenAddress) returns (uint256 positionId) {
         require(amount > 0, "Amount must be greater than 0");
         require(tokenPrices[tokenAddress] > 0, "Token price not set");
         
