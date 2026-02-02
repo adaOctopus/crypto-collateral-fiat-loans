@@ -13,20 +13,20 @@ import "./VerificationNFT.sol";
  */
 contract CollateralLockOptimized is Ownable, ReentrancyGuard {
 
-    VerificationNFT public verificationNFT;
+    VerificationNFT public immutable verificationNFT;
     //verificationNFT is an NFT that is minted when a user locks collateral
     //uint256 public immutable VERIFICATION_NFT_PRICE = 1000000000000000000; // 1 ETH
 
     
-    // Collateral data structure
+    // Collateral data structure (packed for fewer storage slots)
     struct CollateralPosition {
         address user;
         address tokenAddress;
         uint128 amount;
-        uint256 loanAmount; // In USD (scaled by 1e18)
-        uint256 collateralRatio; // Basis points (e.g., 15000 = 150%)
-        uint256 lockTimestamp;
-        uint256 unlockTimestamp;
+        uint128 collateralRatio; // Basis points (e.g., 15000 = 150%) - fits uint128
+        uint256 loanAmount;      // In USD (scaled by 1e18)
+        uint64 lockTimestamp;
+        uint64 unlockTimestamp;
         bool isActive;
         uint256 nftTokenId;
     }
@@ -35,8 +35,6 @@ contract CollateralLockOptimized is Ownable, ReentrancyGuard {
     mapping(address => bool) public supportedTokens;
     mapping(address => uint256[]) public userPositionIds;
     
-    // User positions
-    mapping(address => CollateralPosition[]) public userPositions;
     mapping(uint256 => CollateralPosition) public positions; // positionId => position
     uint256 private _positionCounter;
     
@@ -139,60 +137,46 @@ contract CollateralLockOptimized is Ownable, ReentrancyGuard {
         uint256 loanAmountUSD,
         uint256 minCollateralRatio
     ) public nonReentrant onlySupportedToken(tokenAddress) returns (uint256 positionId) {
+        address sender = msg.sender;
         require(amount > 0, "Amount must be greater than 0");
-        require(tokenPrices[tokenAddress] > 0, "Token price not set");
+        uint256 price = tokenPrices[tokenAddress];
+        require(price > 0, "Token price not set");
         
         // Calculate collateral ratio
-        uint256 collateralValueUSD = (amount * tokenPrices[tokenAddress]) / 1e18;
-        uint256 collateralRatio = (collateralValueUSD * 10000) / loanAmountUSD;
-        
-        require(collateralRatio >= minCollateralRatio, "Insufficient collateral");
-        require(collateralRatio >= MIN_COLLATERAL_RATIO, "Below minimum ratio");
+        uint256 collateralValueUSD = (amount * price) / 1e18;
+        uint256 ratio = (collateralValueUSD * 10000) / loanAmountUSD;
+        require(ratio >= minCollateralRatio, "Insufficient collateral");
+        require(ratio >= MIN_COLLATERAL_RATIO, "Below minimum ratio");
+        require(ratio <= type(uint128).max, "Ratio overflow");
         
         // Transfer tokens from user
-        IERC20 token = IERC20(tokenAddress);
-        require(token.transferFrom(msg.sender, address(this), amount), "Transfer failed");
+        require(IERC20(tokenAddress).transferFrom(sender, address(this), amount), "Transfer failed");
         
-        // Create position
-        positionId = _positionCounter++;
-        require(amount <= type(uint128).max, "Amount exceeds uint128 max");
-        CollateralPosition memory position = CollateralPosition({
-            user: msg.sender,
-            tokenAddress: tokenAddress,
-            amount: uint128(amount),
-            loanAmount: loanAmountUSD,
-            collateralRatio: collateralRatio,
-            lockTimestamp: block.timestamp,
-            unlockTimestamp: 0, // Set by backend when loan is repaid
-            isActive: true,
-            nftTokenId: 0
-        });
-        
-        positions[positionId] = position;
-        // This is bad for gas, but simple for now
-        // Why? Because we are storing the same STORAGE DATA TWICE
-        // OK for demo purposes but need to change to ids instead with static types, like
-        //mapping(address => uint256[]) public userPositionIds;
-        userPositionIds[msg.sender].push(positionId);
-        //userPositions[msg.sender].push(position);
-        
-        // Mint verification NFT
+        // Allocate position id and mint NFT first so we can write position once
+        unchecked {
+            positionId = _positionCounter++;
+        }
         string memory tokenURI = string(abi.encodePacked(
             "https://api.collateralcrypto.com/nft/",
             _toString(positionId)
         ));
-        uint256 nftTokenId = verificationNFT.mintVerificationNFT(msg.sender, tokenURI);
-        positions[positionId].nftTokenId = nftTokenId;
+        uint256 nftTokenId = verificationNFT.mintVerificationNFT(sender, tokenURI);
         
-        emit CollateralLocked(
-            msg.sender,
-            positionId,
-            tokenAddress,
-            amount,
-            loanAmountUSD,
-            nftTokenId
-        );
+        require(amount <= type(uint128).max, "Amount exceeds uint128 max");
+        positions[positionId] = CollateralPosition({
+            user: sender,
+            tokenAddress: tokenAddress,
+            amount: uint128(amount),
+            collateralRatio: uint128(ratio),
+            loanAmount: loanAmountUSD,
+            lockTimestamp: uint64(block.timestamp),
+            unlockTimestamp: 0,
+            isActive: true,
+            nftTokenId: nftTokenId
+        });
+        userPositionIds[sender].push(positionId);
         
+        emit CollateralLocked(sender, positionId, tokenAddress, amount, loanAmountUSD, nftTokenId);
         return positionId;
     }
     
@@ -217,13 +201,13 @@ contract CollateralLockOptimized is Ownable, ReentrancyGuard {
         // Check if position remains healthy after unlock
         uint256 remainingAmount = position.amount - unlockAmount;
         uint256 remainingValueUSD = (remainingAmount * tokenPrices[position.tokenAddress]) / 1e18;
-        uint256 newCollateralRatio = (remainingValueUSD * 10000) / position.loanAmount;
-        
-        require(newCollateralRatio >= MIN_COLLATERAL_RATIO, "Unlock would breach ratio");
+        uint256 newRatio = (remainingValueUSD * 10000) / position.loanAmount;
+        require(newRatio >= MIN_COLLATERAL_RATIO, "Unlock would breach ratio");
+        require(newRatio <= type(uint128).max, "Ratio overflow");
         
         // Update position
         position.amount = uint128(remainingAmount);
-        position.collateralRatio = newCollateralRatio;
+        position.collateralRatio = uint128(newRatio);
         
         // Transfer tokens back to user
 
@@ -268,7 +252,7 @@ contract CollateralLockOptimized is Ownable, ReentrancyGuard {
         require(position.isActive, "Position not active");
         
         position.isActive = false;
-        position.unlockTimestamp = block.timestamp;
+        position.unlockTimestamp = uint64(block.timestamp);
         
         // Transfer remaining collateral back to user
         if (position.amount > 0) {
@@ -278,10 +262,17 @@ contract CollateralLockOptimized is Ownable, ReentrancyGuard {
     }
     
     /**
-     * @dev Get user's active positions
+     * @dev Get user's positions (built from ids to avoid duplicate storage)
      */
     function getUserPositions(address user) external view returns (CollateralPosition[] memory) {
-        return userPositions[user];
+        uint256[] storage ids = userPositionIds[user];
+        uint256 len = ids.length;
+        CollateralPosition[] memory result = new CollateralPosition[](len);
+        for (uint256 i; i < len; ) {
+            result[i] = positions[ids[i]];
+            unchecked { ++i; }
+        }
+        return result;
     }
 
     function getUserPositionIds(address user) public view returns(uint256[] memory) {
