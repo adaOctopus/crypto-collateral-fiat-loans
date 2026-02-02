@@ -154,6 +154,11 @@ contract CollateralLock is Ownable, ReentrancyGuard {
         });
         
         positions[positionId] = position;
+        // This is bad for gas, but simple for now
+        // Why? Because we are storing the same STORAGE DATA TWICE
+        // OK for demo purposes but need to change to ids instead with static types, like
+        // mapping(address => uint256[]) public userPositionIds;
+        // userPositionIds[msg.sender].push(positionId); SSTORE REPLACING
         userPositions[msg.sender].push(position);
         
         // Mint verification NFT

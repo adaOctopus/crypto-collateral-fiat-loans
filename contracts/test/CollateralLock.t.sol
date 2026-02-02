@@ -50,12 +50,13 @@ contract CollateralLockTest is Test {
     }
 
     function test_SetSupportedToken() public {
-        address newToken = address(0x999);
-        collateralLock.setSupportedToken(newToken, true);
-        assertTrue(collateralLock.supportedTokens(newToken));
+        // Must use a deployed ERC20 - contract rejects non-contract addresses (EOAs)
+        MockERC20 newToken = new MockERC20("New Token", "NEW", 1000e18);
+        collateralLock.setSupportedToken(address(newToken), true);
+        assertTrue(collateralLock.supportedTokens(address(newToken)));
 
-        collateralLock.setSupportedToken(newToken, false);
-        assertFalse(collateralLock.supportedTokens(newToken));
+        collateralLock.setSupportedToken(address(newToken), false);
+        assertFalse(collateralLock.supportedTokens(address(newToken)));
     }
 
     function test_RevertSetSupportedTokenFromNonOwner() public {
