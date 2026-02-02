@@ -43,6 +43,8 @@ contract CollateralLock is Ownable, ReentrancyGuard {
     uint256 public constant MIN_COLLATERAL_RATIO = 12000; // 120% minimum
     uint256 public constant LIQUIDATION_THRESHOLD = 11000; // 110% triggers liquidation
     uint256 public constant DEFAULT_COLLATERAL_RATIO = 15000; // 150% default
+
+    //mapping(uint256 => bool) public usedNonces;
     
     // Price oracle interface (simplified - in production we use Chainlink)
     mapping(address => uint256) public tokenPrices; // Price in USD (scaled by 1e18)
@@ -92,6 +94,7 @@ contract CollateralLock is Ownable, ReentrancyGuard {
             require(_isERC20Like(token), "Address is not ERC20-like");
         }
         supportedTokens[token] = supported;
+        //usedNonces[uint256(uint160(token))] = false; // reset nonce for token
     }
 
     /**
